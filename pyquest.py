@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import curses
+import locale
+import random
 import signal
 import sys
 import time
 
-import locale
 locale.setlocale(locale.LC_ALL,"")
 
 DIRECTIONS = {
@@ -25,6 +26,32 @@ class Spawn(object):
         self.x = x
         self.zone = None
         self.facing = DIRECTIONS['right']
+        self.level = 1
+        self.attack_rating = 10
+        self.health_rating = 10
+        self.defense_rating = 10
+        self.armor_rating = 10
+        self.damage_taken = 0
+
+    @property
+    def armor(self):
+        return self.armor_rating * self.level
+
+    @property
+    def health_remaining(self):
+        return self.health_total - self.damage_taken
+
+    @property
+    def health_total(self):
+        return self.self.health_rating * self.level
+    
+    def attack(self, opponent):
+        base_damage = self.attack_rating * self.level
+        mitigation = opponent.armor
+        opponent.take_damage(base_damage - mitigation)
+
+    def take_damage(self, opponent, dmg):
+        self.damage_taken += dmg
 
     def set_zone(self, zone):
         self.zone = zone
