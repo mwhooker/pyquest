@@ -7,6 +7,14 @@ import time
 import locale
 locale.setlocale(locale.LC_ALL,"")
 
+DIRECTIONS = {
+    'up': 0,
+    'right': 1,
+    'down': 2,
+    'left': 3
+}
+
+
 
 class Spawn(object):
     """MOB & Users"""
@@ -16,6 +24,7 @@ class Spawn(object):
         self.y = y
         self.x = x
         self.zone = None
+        self.facing = DIRECTIONS['right']
 
     def set_zone(self, zone):
         self.zone = zone
@@ -25,6 +34,10 @@ class Spawn(object):
         self.y = y
         self.x = x
         self.zone.set_field(y, x, self)
+
+
+class Mob(Spawn):
+    pass
 
 
 class Zone(object):
