@@ -57,10 +57,7 @@ class Spawn(object):
         self.zone = zone
 
     def move_to(self, y, x):
-        self.zone.unset_field(self.y, self.x)
-        self.y = y
-        self.x = x
-        self.zone.set_field(y, x, self)
+        self.zone.move_spawn(self, y, x)
 
 
 class Mob(Spawn):
@@ -93,10 +90,22 @@ class Zone(object):
         self.field[y][x] = None
         self.screen.update(y, x, ' ')
 
+    def is_occupied(self, y, x):
+        return bool(self.field[y][x])
+
     def set_field(self, y, x, obj):
         self.field[y][x] = obj
         #self.spawns[spawn] = (spawn.y, spawn.x)
         self.screen.update(y, x, obj.avatar)
+
+    def move_spawn(self, spawn, y, x):
+        if self.is_occupied(y, x):
+            return
+
+        self.unset_field(spawn.y, spawn.x)
+        spawn.y = y
+        spawn.x = x
+        self.set_field(y, x, spawn)
 
 
 
@@ -153,9 +162,11 @@ def main(window):
     screen = Screen(window)
     zone = Zone(100, 100, screen)
     user = Spawn('@', 1, 1)
+    mob = Mob('M', 10, 10)
     control = UserControl(user)
 
     zone.add_spawn(user)
+    zone.add_spawn(mob)
 
     while True:
         ch = window.getch()
