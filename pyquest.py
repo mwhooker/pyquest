@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*-
 import curses
 import signal
 import sys
 import time
 
+import locale
+locale.setlocale(locale.LC_ALL,"")
 
 
 class Spawn(object):
@@ -64,7 +67,7 @@ class Screen(object):
         self.window = window
 
     def update(self, y, x, ch):
-        self.window.addch(y, x, ch)
+        self.window.addstr(y, x, ch)
 
 
     """
