@@ -208,11 +208,12 @@ def main(window):
 
     while True:
         ch = window.getch()
+        curses.flushinp()
         if ch > 0:
             control.accept(ch)
-            window.refresh()
-        time.sleep(1 / 5)
         zone.tick()
+        window.refresh()
+        time.sleep(1 / 5)
 
 
 
