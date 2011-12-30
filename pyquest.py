@@ -370,7 +370,7 @@ class Screen(object):
     def update(self, y, x, ch, rating=None):
 
         color = curses.color_pair(self._rating_to_color(rating))
-        self.window.addstr(y, x, ch, color)
+        self.window.addch(y, x, ch[0], color)
 
 
 class UserControl(object):
@@ -390,12 +390,16 @@ class UserControl(object):
         y, x = old_y, old_x = self.spawn.y, self.spawn.x
         if key == curses.KEY_DOWN:
             y += 1
+            self.spawn.facing = DIRECTIONS['down']
         elif key == curses.KEY_UP:
             y -= 1
+            self.spawn.facing = DIRECTIONS['up']
         elif key == curses.KEY_LEFT:
             x -= 1
+            self.spawn.facing = DIRECTIONS['left']
         elif key == curses.KEY_RIGHT:
             x += 1
+            self.spawn.facing = DIRECTIONS['right']
         else:
             return
         self.spawn.move_to(y, x)
