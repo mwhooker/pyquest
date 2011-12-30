@@ -7,6 +7,9 @@ import signal
 import sys
 import time
 
+from collections import defaultdict
+
+
 locale.setlocale(locale.LC_ALL,"")
 
 DIRECTIONS = {
@@ -21,10 +24,10 @@ DIRECTIONS = {
 class Spawn(object):
     """MOB & Users"""
 
-    def __init__(self, avatar, y, x):
-        self.avatar = avatar
+    def __init__(self, y, x, avatar):
         self.y = y
         self.x = x
+        self.avatar = avatar
         self.zone = None
         self.facing = DIRECTIONS['right']
         self.level = 1
@@ -53,7 +56,7 @@ class Spawn(object):
     def attack(self):
         target_y = self.y + self.facing[0]
         target_x = self.x + self.facing[1]
-        if not self.zone.has_mob(target_y, target_x):
+        if not self.zone.has_spawn(target_y, target_x):
             return
 
         self.do_attack(self.zone.get_field(target_y, target_x))
@@ -62,9 +65,9 @@ class Spawn(object):
     def do_attack(self, opponent):
         base_damage = self.attack_rating * self.level
         mitigation = opponent.armor / 2
-        opponent.take_damage(base_damage - mitigation)
+        opponent.take_damage(self, base_damage - mitigation)
 
-    def take_damage(self, dmg):
+    def take_damage(self, target, dmg):
         self.damage_taken += dmg
 
     def set_zone(self, zone):
@@ -78,7 +81,16 @@ class Spawn(object):
 
 
 class Mob(Spawn):
-    pass
+
+    def __init__(self, y, x, avatar='M'):
+        super(Mob, self).__init__(y, x, avatar)
+
+        self.hate = defaultdict(int)
+        self.kos = False
+
+    def take_damage(self, target, dmg):
+        super(Mob, self).take_damage(target, dmg)
+        self.hate[target] += dmg
 
 
 class Zone(object):
@@ -113,7 +125,7 @@ class Zone(object):
     def is_occupied(self, y, x):
         return bool(self.field[y][x])
     
-    def has_mob(self, y, x):
+    def has_spawn(self, y, x):
         return isinstance(self.field[y][x], Spawn)
 
     def set_field(self, y, x, spawn):
@@ -165,18 +177,18 @@ class Screen(object):
 class UserControl(object):
     """Moves the character around the zone"""
 
-    def __init__(self, mob):
-        self.mob = mob
+    def __init__(self, spawn):
+        self.spawn = spawn
 
     def accept(self, ch):
         if ch in (curses.KEY_DOWN, curses.KEY_UP,
                   curses.KEY_LEFT, curses.KEY_RIGHT):
             self.move_cardinal(ch)
         elif ch == ord('a'):
-            self.mob.attack()
+            self.spawn.attack()
 
     def move_cardinal(self, key):
-        y, x = old_y, old_x = self.mob.y, self.mob.x
+        y, x = old_y, old_x = self.spawn.y, self.spawn.x
         if key == curses.KEY_DOWN:
             y += 1
         elif key == curses.KEY_UP:
@@ -187,7 +199,7 @@ class UserControl(object):
             x += 1
         else:
             return
-        self.mob.move_to(y, x)
+        self.spawn.move_to(y, x)
 
 
 
@@ -199,8 +211,8 @@ def main(window):
 
     screen = Screen(window)
     zone = Zone(100, 100, screen)
-    user = Spawn('@', 1, 1)
-    mob = Mob('M', 10, 10)
+    user = Spawn(1, 1, '@')
+    mob = Mob(10, 10)
     control = UserControl(user)
 
     zone.add_spawn(user)
