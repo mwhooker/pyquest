@@ -75,7 +75,7 @@ class Spawn(object):
     def do_attack(self, opponent):
         base_damage = self.attack_rating * self.level
         mitigation = opponent.armor / 2
-        opponent.take_damage(self, base_damage - mitigation)
+        opponent.take_damage(self, max(0, base_damage - mitigation))
 
     def take_damage(self, target, dmg):
         ChatBox.instance().add_message(
@@ -488,6 +488,7 @@ def main(window):
     screen = Screen(display_win)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@')
+    user.level = 5
     zone.set_player(user)
 
     for i in xrange(1, 11):
