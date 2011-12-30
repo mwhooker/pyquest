@@ -90,18 +90,20 @@ class Spawn(object):
     def distance(self, target):
         return self.zone.distance(self.y, self.x, target.y, target.x)
 
-    def targets_in_radius(self, radius):
+    def circle_iter(self, r):
         """
+        Iterator of coords in circle of r radius around self.
+
         TODO: not circular.
         """
-        area = []
-        for y in xrange(self.y - radius, self.y + radius + 1):
-            for x in xrange(self.x - radius, self.x + radius + 1):
-                if y != self.y and x != self.x:
-                    area.append((y, x))
+        for y in xrange(self.y - r, self.y + r + 1):
+            for x in xrange(self.x - r, self.x + r + 1):
+                if (y, x) != (self.y, self.x):
+                    yield (y, x)
 
-        return [self.zone.get_field(*loc) for loc in area if
-                self.zone.has_spawn(*loc)]
+    def targets_in_radius(self, radius):
+        return [self.zone.get_field(*loc) for loc in self.circle_iter(radius)
+                if self.zone.has_spawn(*loc)]
         
 
     def tick(self):
@@ -238,7 +240,7 @@ class Zone(object):
     def distance(y1, x1, y2, x2):
         delta_y = abs(y1 - y2)
         delta_x = abs(x1 - x2)
-        return math.sqrt(delta_y ** 2 + delta_x ** 2)
+        return math.sqrt(pow(delta_y, 2) + pow(delta_x, 2))
 
     def tick(self):
         for spawn in self.spawns.keys():
