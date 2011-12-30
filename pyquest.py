@@ -37,6 +37,9 @@ class Spawn(object):
         self.damage_taken = 0
         self.level = 1
 
+    def is_user(self):
+        return False
+
     @property
     def armor(self):
         return self.armor_rating * self.level
@@ -65,9 +68,7 @@ class Spawn(object):
         target = self.get_facing()
         if not target:
             return
-
         self.do_attack(target)
-
 
     def do_attack(self, opponent):
         base_damage = self.attack_rating * self.level
@@ -122,7 +123,10 @@ class Player(Spawn):
         # a running total this chaacter has.
         self.experience = 0
 
-    def do_ding():
+    def is_user(self):
+        return True
+
+    def do_ding(self):
         self.level += 1
         print "DING!"
 
@@ -130,7 +134,7 @@ class Player(Spawn):
         self.experience += exp
         if self.experience >= self.experience_needed():
             self.experience -= self.experience_needed()
-            do_ding()
+            self.do_ding()
 
     # TODO:
     # you should be able to functionally figure out how much
@@ -160,8 +164,14 @@ class Mob(Spawn):
         self.kos = True
         self.flees = False
 
+    @property
+    def exp(self):
+        return self.level * 5
+
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
+        if self.is_dead:
+            target.add_experience(self.exp)
         self.hate[target] += dmg
 
     def flee(self):
