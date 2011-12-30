@@ -119,6 +119,13 @@ class Player(Spawn):
         if self.is_dead:
             sys.exit(0)
 
+    def con(self, spawn):
+        """[-1, 1], lower being easier, higher being harder, 0 being even. """
+        delta = spawn.level - self.level
+        if delta == 0:
+            return 0
+        return 1 / delta
+
 
 class Mob(Spawn):
 
@@ -128,6 +135,7 @@ class Mob(Spawn):
         self.hate = defaultdict(int)
         self.kos = True
         self.flees = True
+        self.level = 1
 
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
@@ -196,6 +204,7 @@ class Zone(object):
         self.y = y
         self.x = x
         self.screen = screen
+        self.player = None
 
         self.field = []
         for i in xrange(y):
@@ -205,6 +214,12 @@ class Zone(object):
             self.field.append(row)
 
         self.spawns = {}
+
+    def set_player(self, player):
+        if not isinstance(player, Player):
+            raise TypeError
+        self.player = player
+        self.add_spawn(player)
 
     def add_spawn(self, spawn):
         """Should immediately render spawn on map."""
@@ -227,7 +242,13 @@ class Zone(object):
     def set_field(self, y, x, spawn):
         self.field[y][x] = spawn
         self.spawns[spawn] = (spawn.y, spawn.x)
-        self.screen.update(y, x, spawn.avatar)
+        # set con if not player
+        if spawn is not self.player:
+            self.screen.update(spawn.y, spawn.x, spawn.avatar,
+                               self.player.con(spawn))
+        else:
+            self.screen.update(y, x, spawn.avatar)
+
 
     def get_field(self, y, x):
         return self.field[y][x]
@@ -264,16 +285,73 @@ class Screen(object):
 
     def __init__(self, window):
         self.window = window
-
-    def update(self, y, x, ch):
-        self.window.addstr(y, x, ch)
-
-
+    
     """
-    def mob_move(self, spawn, old_y, old_x):
-        self.window.addch(old_y, old_x)
-        self.window.addch(spawn.y, spawn.x, spawn.avatar)
+    level:
+        trivial: green
+        undecided: blue
+        dangerous: yellow
+        impossible: red
+        boss:   A_BOLD ?
     """
+        
+    def update_con(self, y, x, rating):
+        return
+        self.window.chgat(y, x, 1, curses.color_pair(2))
+        """
+COLOR_BLACK Black
+COLOR_BLUE  Blue
+COLOR_CYAN  Cyan (light greenish blue)
+COLOR_GREEN Green
+COLOR_MAGENTA   Magenta (purplish red)
+COLOR_RED   Red
+COLOR_WHITE White
+COLOR_YELLOW    Yellow
+        """
+
+    def update(self, y, x, ch, rating=None):
+        blue = 1
+        cyan = 2
+        green = 3
+        magenta = 4
+        red = 5
+        white = 6
+        yellow = 7
+
+        if not rating:
+            color = 6
+        elif rating < -0.25:
+            color = blue
+        elif rating < -0.5:
+            color = cyan
+        elif rating < 0:
+            color = green
+        elif rating <= 0.25:
+            color = magenta
+        elif rating <= 0.5:
+            color = red
+        elif rating < 1:
+            color = white
+        else:
+            color = yellow
+
+
+        """
+        elif rating < -0.5:
+            color = 3
+        elif rating < -0.75:
+            color = 2
+        elif rating < 0:
+            color = 1
+        elif rating == 0:
+            color = 6
+        elif rating < 0.25:
+            color = 7
+        else:
+            color = 5
+        """
+
+        self.window.addstr(y, x, ch, curses.color_pair(color))
 
 
 class UserControl(object):
@@ -304,21 +382,46 @@ class UserControl(object):
         self.spawn.move_to(y, x)
 
 
+def init_colors():
+
+    colors = (
+        curses.COLOR_BLACK,
+        curses.COLOR_BLUE,
+        curses.COLOR_CYAN,
+        curses.COLOR_GREEN,
+        curses.COLOR_MAGENTA,
+        curses.COLOR_RED,
+        curses.COLOR_WHITE,
+        curses.COLOR_YELLOW
+    )
+
+    for i, color in enumerate(colors):
+        curses.init_pair(i, color, -1)
+
 
 def main(window):
     curses.curs_set(0)
     curses.cbreak()
+    curses.use_default_colors()
+    assert curses.has_colors()
     window.nodelay(1)
     window.border(0)
+
+    init_colors()
 
     screen = Screen(window)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@')
-    mob = Mob(10, 10)
+    user.level = 5
+    zone.set_player(user)
+
+    for i in xrange(1, 11):
+        mob = Mob(i, 10, avatar=str(i))
+        mob.level = i
+        zone.add_spawn(mob)
     control = UserControl(user)
 
-    zone.add_spawn(user)
-    zone.add_spawn(mob)
+    #zone.add_spawn(mob)
 
     last_tick = 0
     while True:
