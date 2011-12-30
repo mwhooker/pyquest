@@ -275,12 +275,12 @@ class Zone(object):
     def set_field(self, y, x, spawn):
         self.field[y][x] = spawn
         self.spawns[spawn] = (spawn.y, spawn.x)
-        # set con if not player
+
         if spawn is not self.player:
-            self.screen.update(spawn.y, spawn.x, spawn.avatar,
-                               self.player.con(spawn))
+            con = self.player.con(spawn)
         else:
-            self.screen.update(y, x, spawn.avatar)
+            con = None
+        self.screen.update(y, x, spawn.avatar, con)
 
 
     def get_field(self, y, x):
@@ -310,6 +310,13 @@ class Zone(object):
 
     def tick(self):
         for spawn in self.spawns.keys():
+            # set con if not player
+            if spawn is not self.player:
+                self.screen.update_con(
+                    spawn.y, spawn.x,
+                    self.player.con(spawn)
+                )
+
             spawn.tick()
             if spawn.is_dead:
                 self.remove_spawn(spawn)
@@ -331,12 +338,8 @@ class Screen(object):
         impossible: red
         boss:   A_BOLD ?
     """
-        
-    def update_con(self, y, x, rating):
-        return
-        self.window.chgat(y, x, 1, curses.color_pair(2))
 
-    def update(self, y, x, ch, rating=None):
+    def _rating_to_color(self, rating):
         blue = 1
         cyan = 2
         green = 3
@@ -346,21 +349,28 @@ class Screen(object):
         yellow = 7
 
         if not rating:
-            color = 6
+            return white
         elif rating < -0.25:
-            color = blue
+            return blue
         elif rating < -0.5:
-            color = cyan
+            return cyan
         elif rating < 0:
-            color = green
+            return green
         elif rating < 0.25:
-            color = magenta
+            return magenta
         elif rating < 0.75:
-            color = red
+            return red
         elif rating >= 0.75:
-            color = yellow
+            return yellow
 
-        self.window.addstr(y, x, ch, curses.color_pair(color))
+    def update_con(self, y, x, rating):
+        color = curses.color_pair(self._rating_to_color(rating))
+        self.window.chgat(y, x, 1, color)
+
+    def update(self, y, x, ch, rating=None):
+
+        color = curses.color_pair(self._rating_to_color(rating))
+        self.window.addstr(y, x, ch, color)
 
 
 class UserControl(object):
