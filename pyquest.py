@@ -128,13 +128,9 @@ class Player(Spawn):
 
     def do_ding(self):
         self.level += 1
-        print "DING!"
 
     def add_experience(self, exp):
         self.experience += exp
-        if self.experience >= self.experience_needed():
-            self.experience -= self.experience_needed()
-            self.do_ding()
 
     # TODO:
     # you should be able to functionally figure out how much
@@ -144,6 +140,8 @@ class Player(Spawn):
 
     def tick(self):
         super(Player, self).tick()
+        if self.experience >= self.experience_needed():
+            self.do_ding()
         if self.is_dead:
             sys.exit(0)
 
