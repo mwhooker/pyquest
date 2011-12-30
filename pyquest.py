@@ -78,6 +78,9 @@ class Spawn(object):
         opponent.take_damage(self, base_damage - mitigation)
 
     def take_damage(self, target, dmg):
+        ChatBox.instance().add_message(
+            "%s hits %s for %s damage" % (target.avatar, self.avatar, dmg)
+        )
         self.damage_taken += dmg
 
     def set_zone(self, zone):
@@ -133,6 +136,7 @@ class Player(Spawn):
         return True
 
     def do_ding(self):
+        ChatBox.instance().add_message("Ding! level %d" % self.level)
         self.level += 1
 
     def add_experience(self, exp):
@@ -442,6 +446,11 @@ class ChatBox(object):
 
         self.window.refresh()
 
+    @staticmethod
+    def instance():
+        return ChatBox._instance
+
+
 def init_colors():
 
     colors = (
@@ -474,7 +483,7 @@ def main(window):
     chat_win = window.subwin(20, 80, 0, 101)
     chat_panel = curses.panel.new_panel(chat_win)
     chatbox = ChatBox(chat_panel, 20, 80)
-
+    ChatBox._instance = chatbox
 
     screen = Screen(display_win)
     zone = Zone(100, 100, screen)
