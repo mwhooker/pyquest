@@ -326,13 +326,11 @@ COLOR_YELLOW    Yellow
             color = cyan
         elif rating < 0:
             color = green
-        elif rating <= 0.25:
+        elif rating < 0.25:
             color = magenta
-        elif rating <= 0.5:
+        elif rating < 0.75:
             color = red
-        elif rating < 1:
-            color = white
-        else:
+        elif rating >= 0.75:
             color = yellow
 
 
@@ -412,7 +410,7 @@ def main(window):
     screen = Screen(window)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@')
-    user.level = 5
+    user.level = 1
     zone.set_player(user)
 
     for i in xrange(1, 11):
