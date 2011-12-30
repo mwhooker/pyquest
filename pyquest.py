@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 import curses
 import locale
 import random
@@ -9,10 +10,10 @@ import time
 locale.setlocale(locale.LC_ALL,"")
 
 DIRECTIONS = {
-    'up': 0,
-    'right': 1,
-    'down': 2,
-    'left': 3
+    'up': (-1, 0),
+    'right': (0, 1),
+    'down': (1, 0),
+    'left': (0, -1)
 }
 
 
@@ -43,14 +44,27 @@ class Spawn(object):
 
     @property
     def health_total(self):
-        return self.self.health_rating * self.level
+        return self.health_rating * self.level
     
-    def attack(self, opponent):
+    @property
+    def is_dead(self):
+        return self.health_remaining < 1
+
+    def attack(self):
+        target_y = self.y + self.facing[0]
+        target_x = self.x + self.facing[1]
+        if not self.zone.has_mob(target_y, target_x):
+            return
+
+        self.do_attack(self.zone.get_field(target_y, target_x))
+
+
+    def do_attack(self, opponent):
         base_damage = self.attack_rating * self.level
-        mitigation = opponent.armor
+        mitigation = opponent.armor / 2
         opponent.take_damage(base_damage - mitigation)
 
-    def take_damage(self, opponent, dmg):
+    def take_damage(self, dmg):
         self.damage_taken += dmg
 
     def set_zone(self, zone):
@@ -58,6 +72,9 @@ class Spawn(object):
 
     def move_to(self, y, x):
         self.zone.move_spawn(self, y, x)
+
+    def tick(self):
+        pass
 
 
 class Mob(Spawn):
@@ -87,16 +104,25 @@ class Zone(object):
         self.set_field(spawn.y, spawn.x, spawn)
 
     def unset_field(self, y, x):
+        cur = self.field[y][x]
         self.field[y][x] = None
+        if cur in self.spawns:
+            del self.spawns[cur]
         self.screen.update(y, x, ' ')
 
     def is_occupied(self, y, x):
         return bool(self.field[y][x])
+    
+    def has_mob(self, y, x):
+        return isinstance(self.field[y][x], Spawn)
 
-    def set_field(self, y, x, obj):
-        self.field[y][x] = obj
-        #self.spawns[spawn] = (spawn.y, spawn.x)
-        self.screen.update(y, x, obj.avatar)
+    def set_field(self, y, x, spawn):
+        self.field[y][x] = spawn
+        self.spawns[spawn] = (spawn.y, spawn.x)
+        self.screen.update(y, x, spawn.avatar)
+
+    def get_field(self, y, x):
+        return self.field[y][x]
 
     def move_spawn(self, spawn, y, x):
         if self.is_occupied(y, x):
@@ -106,6 +132,16 @@ class Zone(object):
         spawn.y = y
         spawn.x = x
         self.set_field(y, x, spawn)
+
+    def remove_spawn(self, spawn):
+        self.unset_field(spawn.y, spawn.x)
+
+    def tick(self):
+        for spawn in self.spawns.keys():
+            if spawn.is_dead:
+                self.remove_spawn(spawn)
+                continue
+            spawn.tick()
 
 
 
@@ -136,6 +172,8 @@ class UserControl(object):
         if ch in (curses.KEY_DOWN, curses.KEY_UP,
                   curses.KEY_LEFT, curses.KEY_RIGHT):
             self.move_cardinal(ch)
+        elif ch == ord('a'):
+            self.mob.attack()
 
     def move_cardinal(self, key):
         y, x = old_y, old_x = self.mob.y, self.mob.x
@@ -170,8 +208,11 @@ def main(window):
 
     while True:
         ch = window.getch()
-        control.accept(ch)
-        window.refresh()
+        if ch > 0:
+            control.accept(ch)
+            window.refresh()
+        time.sleep(1 / 5)
+        zone.tick()
 
 
 
