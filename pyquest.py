@@ -31,10 +31,9 @@ class Spawn(object):
         self.zone = None
         self.facing = DIRECTIONS['right']
         self.level = 1
-        self.attack_rating = 10
+        self.attack_rating = 1
         self.health_rating = 10
-        self.defense_rating = 10
-        self.armor_rating = 10
+        self.armor_rating = 1
         self.damage_taken = 0
 
     @property
@@ -53,13 +52,20 @@ class Spawn(object):
     def is_dead(self):
         return self.health_remaining < 1
 
-    def attack(self):
+    def can_hit(self, target):
+        return self.get_facing() == target
+
+    def get_facing(self):
         target_y = self.y + self.facing[0]
         target_x = self.x + self.facing[1]
-        if not self.zone.has_spawn(target_y, target_x):
+        return self.zone.get_field(target_y, target_x)
+
+    def attack(self):
+        target = self.get_facing()
+        if not target:
             return
 
-        self.do_attack(self.zone.get_field(target_y, target_x))
+        self.do_attack(target)
 
 
     def do_attack(self, opponent):
@@ -79,6 +85,12 @@ class Spawn(object):
     def tick(self):
         pass
 
+class Player(Spawn):
+
+    def tick(self):
+        if self.is_dead:
+            sys.exit(0)
+
 
 class Mob(Spawn):
 
@@ -91,6 +103,45 @@ class Mob(Spawn):
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
         self.hate[target] += dmg
+
+    @property
+    def nearest_enemy(self):
+        enemies = [(spawn, spawn.x + spawn.y) for spawn in self.hate]
+        return min(enemies, key=lambda x: x[1])[0]
+
+    def flee(self):
+        target = self.nearest_enemy
+        delta_y = self.y - target.y
+        delta_x = self.x - target.x
+        if abs(delta_x) > abs(delta_y):
+            new_x = self.x + (1 if delta_x > 0 else -1)
+            self.move_to(self.y, new_x)
+        else:
+            new_y = self.y + (1 if delta_y > 0 else -1)
+            self.move_to(new_y, self.x)
+
+    def chase(self, target):
+        if self.can_hit(target):
+            self.attack()
+        else:
+            delta_y = self.y - target.y
+            delta_x = self.x - target.x
+            if abs(delta_x) > abs(delta_y):
+                new_x = self.x + (-1 if delta_x > 0 else 1)
+                self.move_to(self.y, new_x)
+            else:
+                new_y = self.y + (-1 if delta_y > 0 else 1)
+                self.move_to(new_y, self.x)
+
+
+    def tick(self):
+        if self.health_total * 0.1 >= self.health_remaining:
+            self.flee()
+        elif len(self.hate):
+            self.chase(
+                max(self.hate.items(), key=lambda x: x[1])[0]
+            )
+
 
 
 class Zone(object):
@@ -150,10 +201,10 @@ class Zone(object):
 
     def tick(self):
         for spawn in self.spawns.keys():
+            spawn.tick()
             if spawn.is_dead:
                 self.remove_spawn(spawn)
                 continue
-            spawn.tick()
 
 
 
@@ -211,7 +262,7 @@ def main(window):
 
     screen = Screen(window)
     zone = Zone(100, 100, screen)
-    user = Spawn(1, 1, '@')
+    user = Player(1, 1, '@')
     mob = Mob(10, 10)
     control = UserControl(user)
 
