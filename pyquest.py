@@ -206,14 +206,19 @@ def main(window):
     zone.add_spawn(user)
     zone.add_spawn(mob)
 
+    last_tick = 0
     while True:
         ch = window.getch()
         curses.flushinp()
         if ch > 0:
             control.accept(ch)
-        zone.tick()
+
+        if time.time() - last_tick >= (1 / 5):
+            zone.tick()
+            last_tick = time.time()
+
         window.refresh()
-        time.sleep(1 / 5)
+        time.sleep(1 / 60)
 
 
 
