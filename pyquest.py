@@ -201,6 +201,7 @@ class Mob(Spawn):
     def tick(self):
         super(Mob, self).tick()
 
+        # attack or flee
         if self.flees and \
            self.health_total * 0.1 >= self.health_remaining:
             self.flee()
@@ -281,7 +282,6 @@ class Zone(object):
         else:
             con = None
         self.screen.update(y, x, spawn.avatar, con)
-
 
     def get_field(self, y, x):
         return self.field[y][x]
