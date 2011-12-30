@@ -31,7 +31,6 @@ class Spawn(object):
         self.avatar = avatar
         self.zone = None
         self.facing = DIRECTIONS['right']
-        self.level = 1
         self.attack_rating = 1
         self.health_rating = 10
         self.armor_rating = 1
@@ -102,10 +101,12 @@ class Spawn(object):
                     yield (y, x)
 
     def targets_in_radius(self, radius):
+        # TODO: move to Zone?
         return [self.zone.get_field(*loc) for loc in self.circle_iter(radius)
                 if self.zone.has_spawn(*loc)]
         
     def regenerate(self):
+        # TODO
         pass
 
     def tick(self):
@@ -113,6 +114,33 @@ class Spawn(object):
         self.regenerate()
 
 class Player(Spawn):
+
+    def __init__(self, *args, **kwargs):
+        super(Player, self).__init__(*args, **kwargs)
+
+        # a running total this chaacter has.
+        self.experience = 0
+
+    def do_ding():
+        # TODO
+        pass
+
+    def add_experience(self, exp):
+        old_level = self.level
+        self.experience += exp
+        if self.level > old_level:
+            do_ding()
+
+    # TODO:
+    # you should be able to functionally figure out how much
+    # exp is needed for next level,
+    def experience_needed(self):
+        return sum(range(self.level + 1)) * (n + 14)
+
+    @property
+    def level(self):
+        """calculated on the fly based on exp."""
+        return 1
 
     def tick(self):
         super(Player, self).tick()
@@ -153,6 +181,7 @@ class Mob(Spawn):
             self.move_to(new_y, self.x)
 
     def chase(self, target):
+        # TODO: doesn't avoid obstacles.
         if self.can_hit(target):
             self.attack()
         else:
@@ -264,6 +293,10 @@ class Zone(object):
 
     def remove_spawn(self, spawn):
         self.unset_field(spawn.y, spawn.x)
+
+    def route(self, y1, x1, y2, x2):
+        # TODO
+        pass
 
     @staticmethod
     def distance(y1, x1, y2, x2):
@@ -384,16 +417,14 @@ def main(window):
     screen = Screen(window)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@')
-    user.level = 1
     zone.set_player(user)
 
     for i in xrange(1, 11):
         mob = Mob(i, 10, avatar=str(i))
         mob.level = i
         zone.add_spawn(mob)
-    control = UserControl(user)
 
-    #zone.add_spawn(mob)
+    control = UserControl(user)
 
     last_tick = 0
     while True:
