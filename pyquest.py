@@ -434,13 +434,15 @@ class ChatBox(object):
         self.window.border(0)
         self.messages = []
 
-    def add_message(self, message):
-        self.messages.append(message)
+    def add_message(self, msg):
+        self.messages.append(msg)
         self.refresh()
 
     def refresh(self):
         for i, msg in enumerate(self.messages[-self.hlines:]):
-            self.window.addnstr(i + 1, 1, msg, self.vlines)
+            self.window.addnstr(i + 1, 1,
+                                msg.ljust(self.vlines, ' '),
+                                self.vlines)
 
         self.window.refresh()
 
@@ -495,6 +497,7 @@ def main(window):
     while True:
 
         if time.time() - last_tick >= (1 / 5):
+            # not fine grained enough for movement
             ch = window.getch()
             curses.flushinp()
             if ch > 0:
