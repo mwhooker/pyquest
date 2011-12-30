@@ -143,9 +143,6 @@ class Player(Spawn):
     def add_experience(self, exp):
         self.experience += exp
 
-    # TODO:
-    # you should be able to functionally figure out how much
-    # exp is needed for next level,
     def experience_needed(self):
         return (((1 + self.level) / 2) * self.level) * (self.level + 14)
 
@@ -496,12 +493,12 @@ def main(window):
 
     last_tick = 0
     while True:
-        ch = window.getch()
-        curses.flushinp()
-        if ch > 0:
-            control.accept(ch)
 
         if time.time() - last_tick >= (1 / 5):
+            ch = window.getch()
+            curses.flushinp()
+            if ch > 0:
+                control.accept(ch)
             zone.tick()
             last_tick = time.time()
 
