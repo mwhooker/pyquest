@@ -202,6 +202,7 @@ class Mob(Spawn):
             )
         elif self.kos:
             targets = self.targets_in_radius(3)
+            targets = [t for t in targets if t.is_user()]
             if len(targets):
                 self.hate[self.nearest_target(targets)] = 2
 
