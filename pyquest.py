@@ -64,8 +64,9 @@ class Spawn(object):
         target_x = self.x + self.facing[1]
         return self.zone.get_field(target_y, target_x)
 
-    def attack(self):
-        target = self.get_facing()
+    def attack(self, target=None):
+        if not target:
+            target = self.get_facing()
         if not target:
             return
         self.do_attack(target)
@@ -166,6 +167,9 @@ class Mob(Spawn):
     def exp(self):
         return self.level * 5
 
+    def can_hit(self, target):
+        return self.distance(target) == 1
+
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
         if self.is_dead:
@@ -186,7 +190,7 @@ class Mob(Spawn):
     def chase(self, target):
         # TODO: doesn't avoid obstacles.
         if self.can_hit(target):
-            self.attack()
+            self.attack(target)
         else:
             delta_y = self.y - target.y
             delta_x = self.x - target.x
@@ -215,16 +219,23 @@ class Mob(Spawn):
             if len(targets):
                 self.hate[self.nearest_target(targets)] = 2
 
-        # slowely forget hate
+        forget = []
         for spawn in self.hate:
+            # slowely forget hate
             if self.distance(spawn) > 5:
                 self.hate[spawn] *= 0.99
-        # remove distant targets on hate list
-        forget = [spawn for spawn in self.hate
-                         if self.distance(spawn) > 20]
-        # remove spawns with no hate left
-        forget.extend(spawn for spawn in self.hate
-                             if self.hate[spawn] < 1)
+
+            # remove distant targets on hate list
+            if self.distance(spawn) > 20:
+                forget.append(spawn)
+
+            # remove spawns with no hate left
+            if self.hate[spawn] < 1:
+                forget.append(spawn)
+
+            if spawn.is_dead:
+                forget.append(spawn)
+
         for spawn in forget:
             del self.hate[spawn]
 
