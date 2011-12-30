@@ -32,7 +32,7 @@ class Spawn(object):
         self.chat = chat
         self.zone = None
         self.facing = DIRECTIONS['right']
-        self.attack_rating = 1
+        self.attack_rating = 2
         self.health_rating = 10
         self.armor_rating = 1
         self.damage_taken = 0
@@ -76,6 +76,7 @@ class Spawn(object):
     def do_attack(self, opponent):
         base_damage = self.attack_rating * self.level
         mitigation = opponent.armor / 2
+        self.chat.add_message("mit: %s, base: %s" % (mitigation, base_damage))
         opponent.take_damage(self, max(0, base_damage - mitigation))
 
     def take_damage(self, target, dmg):
@@ -143,12 +144,13 @@ class Player(Spawn):
     def add_experience(self, exp):
         self.experience += exp
 
+    @property
     def experience_needed(self):
         return (((1 + self.level) / 2) * self.level) * (self.level + 14)
 
     def tick(self):
         super(Player, self).tick()
-        if self.experience >= self.experience_needed():
+        if self.experience >= self.experience_needed:
             self.do_ding()
         if self.is_dead:
             sys.exit(0)
@@ -446,6 +448,47 @@ class ChatBox(object):
 
         self.window.refresh()
 
+class StatBox(object):
+    """
+
+    needs to display:
+        cur/total health
+        level
+        exp/to_next_level
+    """
+
+    def __init__(self, panel, hlines, vlines, player):
+        self.panel = panel
+        self.hlines = hlines - 2
+        self.vlines = vlines - 2
+        self.player = player
+
+        self.window = panel.window()
+
+        self.panel.show()
+        self.window.border(0)
+
+    def tick(self):
+        msgs = [
+            "health: %d/%d" % (
+                self.player.health_remaining,
+                self.player.health_total
+            ),
+            "level: %d" % self.player.level,
+            "exp: %d/%d" % (
+                self.player.experience,
+                self.player.experience_needed
+            )
+        ]
+
+        for i, msg in enumerate(msgs):
+            self.window.addnstr(i + 1, 1,
+                                msg.ljust(self.vlines, ' '),
+                                self.vlines)
+
+        self.window.refresh()
+
+
 
 def init_colors():
 
@@ -480,11 +523,16 @@ def main(window):
     chat_panel = curses.panel.new_panel(chat_win)
     chatbox = ChatBox(chat_panel, 20, 80)
 
+    stat_win = window.subwin(20, 80, 20, 101)
+    stat_panel = curses.panel.new_panel(stat_win)
+
     screen = Screen(display_win)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@', chatbox)
     user.level = 2
     zone.set_player(user)
+
+    statbox = StatBox(stat_panel, 20, 80, user)
 
     for i in xrange(1, 11):
         mob = Mob(i+1, 10, avatar=str(i), chat=chatbox)
@@ -503,6 +551,7 @@ def main(window):
             if ch > 0:
                 control.accept(ch)
             zone.tick()
+            statbox.tick()
             last_tick = time.time()
 
         display_win.refresh()
