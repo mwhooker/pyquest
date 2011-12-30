@@ -2,6 +2,7 @@
 from __future__ import division
 import curses
 import locale
+import math
 import random
 import signal
 import sys
@@ -82,6 +83,27 @@ class Spawn(object):
     def move_to(self, y, x):
         self.zone.move_spawn(self, y, x)
 
+    def nearest_target(self, spawns):
+        enemies = [(spawn, spawn.x + spawn.y) for spawn in spawns]
+        return min(enemies, key=lambda x: x[1])[0]
+    
+    def distance(self, target):
+        return self.zone.distance(self.y, self.x, target.y, target.x)
+
+    def targets_in_radius(self, radius):
+        """
+        TODO: not circular.
+        """
+        area = []
+        for y in xrange(self.y - radius, self.y + radius + 1):
+            for x in xrange(self.x - radius, self.x + radius + 1):
+                if y != self.y and x != self.x:
+                    area.append((y, x))
+
+        return [self.zone.get_field(*loc) for loc in area if
+                self.zone.has_spawn(*loc)]
+        
+
     def tick(self):
         pass
 
@@ -98,19 +120,14 @@ class Mob(Spawn):
         super(Mob, self).__init__(y, x, avatar)
 
         self.hate = defaultdict(int)
-        self.kos = False
+        self.kos = True
 
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
         self.hate[target] += dmg
 
-    @property
-    def nearest_enemy(self):
-        enemies = [(spawn, spawn.x + spawn.y) for spawn in self.hate]
-        return min(enemies, key=lambda x: x[1])[0]
-
     def flee(self):
-        target = self.nearest_enemy
+        target = self.nearest_target(self.hate)
         delta_y = self.y - target.y
         delta_x = self.x - target.x
         if abs(delta_x) > abs(delta_y):
@@ -141,6 +158,24 @@ class Mob(Spawn):
             self.chase(
                 max(self.hate.items(), key=lambda x: x[1])[0]
             )
+        elif self.kos:
+            targets = self.targets_in_radius(3)
+            if len(targets):
+                self.hate[self.nearest_target(targets)] = 2
+
+        # slowely forget hate
+        for spawn in self.hate:
+            if self.distance(spawn) > 5:
+                self.hate[spawn] *= 0.99
+        # remove distant targets on hate list
+        forget = [spawn for spawn in self.hate
+                         if self.distance(spawn) > 20]
+        # remove spawns with no hate left
+        forget.extend(spawn for spawn in self.hate
+                             if self.hate[spawn] < 1)
+        for spawn in forget:
+            del self.hate[spawn]
+
 
 
 
@@ -198,6 +233,12 @@ class Zone(object):
 
     def remove_spawn(self, spawn):
         self.unset_field(spawn.y, spawn.x)
+
+    @staticmethod
+    def distance(y1, x1, y2, x2):
+        delta_y = abs(y1 - y2)
+        delta_x = abs(x1 - x2)
+        return math.sqrt(delta_y ** 2 + delta_x ** 2)
 
     def tick(self):
         for spawn in self.spawns.keys():
