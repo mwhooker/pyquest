@@ -105,13 +105,17 @@ class Spawn(object):
         return [self.zone.get_field(*loc) for loc in self.circle_iter(radius)
                 if self.zone.has_spawn(*loc)]
         
+    def regenerate(self):
+        pass
 
     def tick(self):
-        pass
+        """Must always be called by by subclasses."""
+        self.regenerate()
 
 class Player(Spawn):
 
     def tick(self):
+        super(Player, self).tick()
         if self.is_dead:
             sys.exit(0)
 
@@ -123,6 +127,7 @@ class Mob(Spawn):
 
         self.hate = defaultdict(int)
         self.kos = True
+        self.flees = True
 
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
@@ -154,7 +159,10 @@ class Mob(Spawn):
 
 
     def tick(self):
-        if self.health_total * 0.1 >= self.health_remaining:
+        super(Mob, self).tick()
+
+        if self.flees and \
+           self.health_total * 0.1 >= self.health_remaining:
             self.flee()
         elif len(self.hate):
             self.chase(
