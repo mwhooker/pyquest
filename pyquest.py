@@ -25,10 +25,11 @@ DIRECTIONS = {
 class Spawn(object):
     """MOB & Users"""
 
-    def __init__(self, y, x, avatar):
+    def __init__(self, y, x, avatar, chat):
         self.y = y
         self.x = x
         self.avatar = avatar
+        self.chat = chat
         self.zone = None
         self.facing = DIRECTIONS['right']
         self.attack_rating = 1
@@ -78,7 +79,7 @@ class Spawn(object):
         opponent.take_damage(self, max(0, base_damage - mitigation))
 
     def take_damage(self, target, dmg):
-        ChatBox.instance().add_message(
+        self.chat.add_message(
             "%s hits %s for %s damage" % (target.avatar, self.avatar, dmg)
         )
         self.damage_taken += dmg
@@ -136,8 +137,8 @@ class Player(Spawn):
         return True
 
     def do_ding(self):
-        ChatBox.instance().add_message("Ding! level %d" % self.level)
         self.level += 1
+        self.chat.add_message("Ding! level %d" % self.level)
 
     def add_experience(self, exp):
         self.experience += exp
@@ -165,8 +166,8 @@ class Player(Spawn):
 
 class Mob(Spawn):
 
-    def __init__(self, y, x, avatar='M'):
-        super(Mob, self).__init__(y, x, avatar)
+    def __init__(self, y, x, avatar='M', *args, **kwargs):
+        super(Mob, self).__init__(y, x, avatar, *args, **kwargs)
 
         self.hate = defaultdict(int)
         self.kos = True
@@ -428,8 +429,8 @@ class ChatBox(object):
 
     def __init__(self, panel, hlines, vlines):
         self.panel = panel
-        self.hlines = hlines
-        self.vlines = vlines
+        self.hlines = hlines - 2
+        self.vlines = vlines - 2
         self.window = panel.window()
 
         self.panel.show()
@@ -441,14 +442,10 @@ class ChatBox(object):
         self.refresh()
 
     def refresh(self):
-        for i, msg in enumerate(self.messages[-(self.hlines - 2):]):
+        for i, msg in enumerate(self.messages[-self.hlines:]):
             self.window.addnstr(i + 1, 1, msg, self.vlines)
 
         self.window.refresh()
-
-    @staticmethod
-    def instance():
-        return ChatBox._instance
 
 
 def init_colors():
@@ -483,16 +480,15 @@ def main(window):
     chat_win = window.subwin(20, 80, 0, 101)
     chat_panel = curses.panel.new_panel(chat_win)
     chatbox = ChatBox(chat_panel, 20, 80)
-    ChatBox._instance = chatbox
 
     screen = Screen(display_win)
     zone = Zone(100, 100, screen)
-    user = Player(1, 1, '@')
-    user.level = 5
+    user = Player(1, 1, '@', chatbox)
+    user.level = 2
     zone.set_player(user)
 
     for i in xrange(1, 11):
-        mob = Mob(i+1, 10, avatar=str(i))
+        mob = Mob(i+1, 10, avatar=str(i), chat=chatbox)
         mob.level = 1
         zone.add_spawn(mob)
 
