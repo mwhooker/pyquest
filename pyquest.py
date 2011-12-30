@@ -298,16 +298,6 @@ class Screen(object):
     def update_con(self, y, x, rating):
         return
         self.window.chgat(y, x, 1, curses.color_pair(2))
-        """
-COLOR_BLACK Black
-COLOR_BLUE  Blue
-COLOR_CYAN  Cyan (light greenish blue)
-COLOR_GREEN Green
-COLOR_MAGENTA   Magenta (purplish red)
-COLOR_RED   Red
-COLOR_WHITE White
-COLOR_YELLOW    Yellow
-        """
 
     def update(self, y, x, ch, rating=None):
         blue = 1
@@ -332,22 +322,6 @@ COLOR_YELLOW    Yellow
             color = red
         elif rating >= 0.75:
             color = yellow
-
-
-        """
-        elif rating < -0.5:
-            color = 3
-        elif rating < -0.75:
-            color = 2
-        elif rating < 0:
-            color = 1
-        elif rating == 0:
-            color = 6
-        elif rating < 0.25:
-            color = 7
-        else:
-            color = 5
-        """
 
         self.window.addstr(y, x, ch, curses.color_pair(color))
 
