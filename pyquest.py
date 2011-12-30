@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 import curses
+import curses.panel
 import locale
 import math
 import random
@@ -383,7 +384,6 @@ class Screen(object):
         self.window.chgat(y, x, 1, color)
 
     def update(self, y, x, ch, rating=None):
-
         color = curses.color_pair(self._rating_to_color(rating))
         self.window.addch(y, x, ch[0], color)
 
@@ -420,6 +420,28 @@ class UserControl(object):
         self.spawn.move_to(y, x)
 
 
+class ChatBox(object):
+
+    def __init__(self, panel, hlines, vlines):
+        self.panel = panel
+        self.hlines = hlines
+        self.vlines = vlines
+        self.window = panel.window()
+
+        self.panel.show()
+        self.window.border(0)
+        self.messages = []
+
+    def add_message(self, message):
+        self.messages.append(message)
+        self.refresh()
+
+    def refresh(self):
+        for i, msg in enumerate(self.messages[-(self.hlines - 2):]):
+            self.window.addnstr(i + 1, 1, msg, self.vlines)
+
+        self.window.refresh()
+
 def init_colors():
 
     colors = (
@@ -437,6 +459,7 @@ def init_colors():
         curses.init_pair(i, color, -1)
 
 
+
 def main(window):
     curses.curs_set(0)
     curses.cbreak()
@@ -444,10 +467,16 @@ def main(window):
     assert curses.has_colors()
     window.nodelay(1)
     window.border(0)
+    display_win = window.subwin(45, 100, 0, 0)
 
     init_colors()
 
-    screen = Screen(window)
+    chat_win = window.subwin(20, 80, 0, 101)
+    chat_panel = curses.panel.new_panel(chat_win)
+    chatbox = ChatBox(chat_panel, 20, 80)
+
+
+    screen = Screen(display_win)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@')
     zone.set_player(user)
@@ -470,7 +499,7 @@ def main(window):
             zone.tick()
             last_tick = time.time()
 
-        window.refresh()
+        display_win.refresh()
         time.sleep(1 / 60)
 
 
