@@ -35,6 +35,7 @@ class Spawn(object):
         self.health_rating = 10
         self.armor_rating = 1
         self.damage_taken = 0
+        self.level = 1
 
     @property
     def armor(self):
@@ -122,25 +123,20 @@ class Player(Spawn):
         self.experience = 0
 
     def do_ding():
-        # TODO
-        pass
+        self.level += 1
+        print "DING!"
 
     def add_experience(self, exp):
-        old_level = self.level
         self.experience += exp
-        if self.level > old_level:
+        if self.experience >= self.experience_needed():
+            self.experience -= self.experience_needed()
             do_ding()
 
     # TODO:
     # you should be able to functionally figure out how much
     # exp is needed for next level,
     def experience_needed(self):
-        return sum(range(self.level + 1)) * (n + 14)
-
-    @property
-    def level(self):
-        """calculated on the fly based on exp."""
-        return 1
+        return (((1 + self.level) / 2) * self.level) * (self.level + 14)
 
     def tick(self):
         super(Player, self).tick()
@@ -162,8 +158,7 @@ class Mob(Spawn):
 
         self.hate = defaultdict(int)
         self.kos = True
-        self.flees = True
-        self.level = 1
+        self.flees = False
 
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
@@ -420,8 +415,8 @@ def main(window):
     zone.set_player(user)
 
     for i in xrange(1, 11):
-        mob = Mob(i, 10, avatar=str(i))
-        mob.level = i
+        mob = Mob(i+1, 10, avatar=str(i))
+        mob.level = 1
         zone.add_spawn(mob)
 
     control = UserControl(user)
