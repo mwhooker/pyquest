@@ -21,7 +21,6 @@ DIRECTIONS = {
 }
 
 
-
 class Spawn(object):
     """MOB & Users"""
 
@@ -35,6 +34,7 @@ class Spawn(object):
         self.health_rating = 10
         self.armor_rating = 1
         self.damage_taken = 0
+        self.regen_rate = 1 / 30
         self.level = 1
 
     def is_user(self):
@@ -110,7 +110,11 @@ class Spawn(object):
         
     def regenerate(self):
         # TODO
-        pass
+        if self.health_remaining == self.health_total:
+            return
+
+        regen = min(self.regen_rate, self.health_total - self.health_remaining)
+        self.damage_taken -= regen
 
     def tick(self):
         """Must always be called by by subclasses."""
