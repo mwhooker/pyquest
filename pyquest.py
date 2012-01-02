@@ -3,6 +3,7 @@ from __future__ import division
 import curses
 import curses.panel
 import locale
+import logging
 import math
 import random
 import signal
@@ -11,6 +12,8 @@ import time
 
 from collections import defaultdict
 
+
+logging.basicConfig(filename='debug.log',level=logging.DEBUG)
 
 locale.setlocale(locale.LC_ALL,"")
 
@@ -26,6 +29,7 @@ class Spawn(object):
     """MOB & Users"""
 
     def __init__(self, y, x, avatar, chat):
+        logging.debug("spawning %s" % avatar)
         self.y = y
         self.x = x
         self.avatar = avatar
@@ -90,6 +94,8 @@ class Spawn(object):
 
     def move_to(self, y, x):
         self.zone.move_spawn(self, y, x)
+
+    # distance methods. Do these belong here, or in zone?
 
     def nearest_target(self, spawns):
         enemies = [(spawn, spawn.x + spawn.y) for spawn in spawns]
