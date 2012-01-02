@@ -10,7 +10,7 @@ import signal
 import sys
 import time
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 
 logging.basicConfig(filename='debug.log',level=logging.DEBUG)
@@ -177,7 +177,6 @@ class Mob(Spawn):
         self.hate = defaultdict(int)
         self.kos = True
         self.flees = False
-        self.respawn = 60
 
     @property
     def exp(self):
@@ -536,7 +535,7 @@ def main(window):
     screen = Screen(display_win)
     zone = Zone(100, 100, screen)
     user = Player(1, 1, '@', chatbox)
-    user.level = 2
+    user.level = 20
     zone.set_player(user)
 
     statbox = StatBox(stat_panel, 20, 80, user)
@@ -548,21 +547,70 @@ def main(window):
 
     control = UserControl(user)
 
-    last_tick = 0
-    while True:
+    fps = Counter()
 
-        if time.time() - last_tick >= (1 / 5):
-            # not fine grained enough for movement
-            ch = window.getch()
-            curses.flushinp()
-            if ch > 0:
-                control.accept(ch)
-            zone.tick()
-            statbox.tick()
-            last_tick = time.time()
+    def log_fps():
+        logging.info("Main loop operating at %f fps" % (fps.flush()))
 
+    def loop():
+        ch = window.getch()
+        curses.flushinp()
+        if ch > 0:
+            control.accept(ch)
+        zone.tick()
+        statbox.tick()
+        fps.inc()
         display_win.refresh()
-        time.sleep(1 / 60)
+
+    schedule = Scheduler()
+    schedule.repeat(loop, 1 / 60)
+    schedule.repeat(log_fps, 1)
+
+    while True:
+        schedule.notify()
+        time.sleep(1 / 120)
+
+
+class Counter(object):
+
+    def __init__(self):
+        self.count = 0
+
+    def inc(self):
+        self.count += 1
+
+    def flush(self):
+        tmp = self.count
+        self.count = 0
+        return tmp
+
+
+class Scheduler(object):
+
+    def __init__(self):
+        self.last_tick = 0
+        self.schedule = set([])
+        self.Task = namedtuple('Task', ['action', 'when', 'repeat'])
+
+    def repeat(self, action, every):
+        self.schedule.add(self.Task(action, time.time() + every, every))
+
+    def schedule(self, action, from_now):
+        self.schedule.add(self.Task(action, time.time() + from_now, False))
+
+    def notify(self):
+        to_exec = [task for task in self.schedule if task.when <= time.time()]
+
+        for task in to_exec:
+            if task.when + 0.1 < time.time():
+                logging.error(
+                    "task %s later than 100ms" % task.action.__name__)
+
+            task.action()
+
+            if task.repeat:
+                self.repeat(task.action, task.repeat)
+        self.schedule.difference_update(set(to_exec))
 
 
 
