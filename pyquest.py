@@ -171,6 +171,7 @@ class Mob(Spawn):
         self.hate = defaultdict(int)
         self.kos = True
         self.flees = False
+        self.respawn = 60
 
     @property
     def exp(self):
