@@ -122,7 +122,6 @@ class Spawn(object):
                 if self.zone.has_spawn(*loc)]
         
     def regenerate(self):
-        # TODO
         if self.health_remaining == self.health_total:
             return
 
@@ -583,6 +582,18 @@ class Counter(object):
         tmp = self.count
         self.count = 0
         return tmp
+
+class Tick(object):
+
+    def __init__(self):
+        self.observers = []
+
+    def tick(self):
+        for obj in self.observers:
+            obj.tick()
+
+    def register(self, obj):
+        self.observers.append(obj)
 
 
 class Scheduler(object):
