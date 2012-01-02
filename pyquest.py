@@ -133,6 +133,7 @@ class Spawn(object):
         """Must always be called by by subclasses."""
         self.regenerate()
 
+
 class Player(Spawn):
 
     def __init__(self, *args, **kwargs):
@@ -326,19 +327,13 @@ class Zone(object):
 
     def tick(self):
         for spawn in self.spawns.keys():
-            """
-            # set con if not player
-            if spawn is not self.player:
-                self.screen.update_con(
-                    spawn.y, spawn.x,
-                    self.player.con(spawn)
-                )
-            """
 
             spawn.tick()
             if spawn.is_dead:
                 self.remove_spawn(spawn)
                 continue
+
+            self.screen.update(spawn.y, spawn.x, spawn)
 
 
 
@@ -530,7 +525,7 @@ def main(window):
     stat_panel = curses.panel.new_panel(stat_win)
 
     user = Player(1, 1, '@', chatbox)
-    user.level = 20
+    user.level = 2
 
     screen = Screen(display_win, user)
     zone = Zone(100, 100, screen)
