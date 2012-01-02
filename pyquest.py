@@ -549,9 +549,6 @@ def main(window):
 
     fps = Counter()
 
-    def log_fps():
-        logging.info("Main loop operating at %f fps" % (fps.flush()))
-
     def loop():
         ch = window.getch()
         curses.flushinp()
@@ -564,11 +561,23 @@ def main(window):
 
     schedule = Scheduler()
     schedule.repeat(loop, 1 / 60)
-    schedule.repeat(log_fps, 1)
+    schedule.repeat(
+        lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
+        1
+    )
 
+
+
+    last_loop = time.time()
     while True:
         schedule.notify()
-        time.sleep(1 / 120)
+        """
+        delta = time.time() - (last_loop + 1 / 60)
+        if delta > 0:
+            logging.info("sleeping for %s" % delta)
+            time.sleep(delta)
+        last_loop = time.time()
+        """
 
 
 class Counter(object):
@@ -603,7 +612,7 @@ class Scheduler(object):
 
         for task in to_exec:
             if task.when + 0.1 < time.time():
-                logging.error(
+                logging.warn(
                     "task %s later than 100ms" % task.action.__name__)
 
             task.action()
