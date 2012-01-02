@@ -559,26 +559,36 @@ def main(window):
         fps.inc()
         display_win.refresh()
 
+    target_fps = 1 / 60
+
     schedule = Scheduler()
-    schedule.repeat(loop, 1 / 60)
+    schedule.repeat(loop, target_fps)
     schedule.repeat(
         lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
         1
     )
 
 
-
     last_loop = time.time()
     while True:
         schedule.notify()
-        """
-        delta = time.time() - (last_loop + 1 / 60)
-        if delta > 0:
-            logging.info("sleeping for %s" % delta)
-            time.sleep(delta)
-        last_loop = time.time()
-        """
+        next_event = schedule.next_event() - time.time()
+        if next_event >= 0:
+            time.sleep(next_event)
+        else:
+            logging.info("can't keep up. %s behind" % next_event)
 
+"""
+        delta = last_loop + target_fps - time.time()
+        if delta >= 0:
+            #time.sleep(delta)
+            pass
+        else:
+            logging.info("can't keep up. %s" % delta)
+
+        last_loop = time.time()
+
+"""
 
 class Counter(object):
 
@@ -606,6 +616,9 @@ class Scheduler(object):
 
     def schedule(self, action, from_now):
         self.schedule.add(self.Task(action, time.time() + from_now, False))
+
+    def next_event(self):
+        return min(self.schedule, key=lambda x: x.when).when
 
     def notify(self):
         to_exec = [task for task in self.schedule if task.when <= time.time()]
