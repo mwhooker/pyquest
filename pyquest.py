@@ -569,7 +569,6 @@ def main(window):
     )
 
 
-    last_loop = time.time()
     while True:
         schedule.notify()
         next_event = schedule.next_event() - time.time()
@@ -578,17 +577,6 @@ def main(window):
         else:
             logging.info("can't keep up. %s behind" % next_event)
 
-"""
-        delta = last_loop + target_fps - time.time()
-        if delta >= 0:
-            #time.sleep(delta)
-            pass
-        else:
-            logging.info("can't keep up. %s" % delta)
-
-        last_loop = time.time()
-
-"""
 
 class Counter(object):
 
@@ -628,10 +616,10 @@ class Scheduler(object):
                 logging.warn(
                     "task %s later than 100ms" % task.action.__name__)
 
-            task.action()
-
             if task.repeat:
                 self.repeat(task.action, task.repeat)
+
+            task.action()
         self.schedule.difference_update(set(to_exec))
 
 
