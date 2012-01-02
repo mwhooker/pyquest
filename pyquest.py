@@ -9,6 +9,7 @@ import random
 import signal
 import sys
 import time
+import types
 
 from collections import defaultdict, namedtuple
 
@@ -264,7 +265,6 @@ class Zone(object):
         self.y = y
         self.x = x
         self.screen = screen
-        self.player = None
 
         self.field = []
         for i in xrange(y):
@@ -274,12 +274,6 @@ class Zone(object):
             self.field.append(row)
 
         self.spawns = {}
-
-    def set_player(self, player):
-        if not isinstance(player, Player):
-            raise TypeError
-        self.player = player
-        self.add_spawn(player)
 
     def add_spawn(self, spawn):
         """Should immediately render spawn on map."""
@@ -303,11 +297,7 @@ class Zone(object):
         self.field[y][x] = spawn
         self.spawns[spawn] = (spawn.y, spawn.x)
 
-        if spawn is not self.player:
-            con = self.player.con(spawn)
-        else:
-            con = None
-        self.screen.update(y, x, spawn.avatar, con)
+        self.screen.update(y, x, spawn)
 
     def get_field(self, y, x):
         return self.field[y][x]
@@ -336,12 +326,14 @@ class Zone(object):
 
     def tick(self):
         for spawn in self.spawns.keys():
+            """
             # set con if not player
             if spawn is not self.player:
                 self.screen.update_con(
                     spawn.y, spawn.x,
                     self.player.con(spawn)
                 )
+            """
 
             spawn.tick()
             if spawn.is_dead:
@@ -353,8 +345,9 @@ class Zone(object):
 class Screen(object):
     """Abstraction to curses."""
 
-    def __init__(self, window):
+    def __init__(self, window, player):
         self.window = window
+        self.player = player
     
     """
     level:
@@ -389,13 +382,17 @@ class Screen(object):
         elif rating >= 0.75:
             return yellow
 
-    def update_con(self, y, x, rating):
-        color = curses.color_pair(self._rating_to_color(rating))
-        self.window.chgat(y, x, 1, color)
-
-    def update(self, y, x, ch, rating=None):
-        color = curses.color_pair(self._rating_to_color(rating))
-        self.window.addch(y, x, ch[0], color)
+    def update(self, y, x, cell):
+        # TODO: going to have to abstract the cell object.
+        # zone will need to keep track of terrain cells & spawn cells
+        if isinstance(cell, Spawn):
+            con = self.player.con(cell)
+            color = curses.color_pair(self._rating_to_color(con))
+            self.window.addch(y, x, cell.avatar[0], color)
+        elif isinstance(cell, types.StringTypes):
+            self.window.addch(y, x, cell[0])
+        else:
+            raise Exception("unrecognized type %s of cell" % type(cell))
 
 
 class UserControl(object):
@@ -532,11 +529,12 @@ def main(window):
     stat_win = window.subwin(20, 80, 20, 101)
     stat_panel = curses.panel.new_panel(stat_win)
 
-    screen = Screen(display_win)
-    zone = Zone(100, 100, screen)
     user = Player(1, 1, '@', chatbox)
     user.level = 20
-    zone.set_player(user)
+
+    screen = Screen(display_win, user)
+    zone = Zone(100, 100, screen)
+    zone.add_spawn(user)
 
     statbox = StatBox(stat_panel, 20, 80, user)
 
