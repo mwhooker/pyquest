@@ -76,8 +76,6 @@ class Spawn(object):
         return self.health_rating * self.level
     
     def is_dead(self):
-        if self.avatar == "10":
-            logging.info( self.health_remaining)
         return self.health_remaining < 1
 
     def can_hit(self, target):
@@ -219,9 +217,6 @@ class Player(Spawn):
     def experience_needed(self):
         return (((1 + self.level) / 2) * self.level) * (self.level + 14)
 
-    def tick(self):
-        super(Player, self).tick()
-
     def con(self, spawn):
         """[-1, 1], lower being easier, higher being harder, 0 being even. """
         delta = spawn.level - self.level
@@ -289,9 +284,6 @@ class Mob(Spawn):
     def tick(self):
         super(Mob, self).tick()
 
-        if self.avatar == "10":
-            if self.is_dead():
-                logging.info("tick")
         # attack or flee
         if self.flees and \
            self.health_total * 0.1 >= self.health_remaining:
