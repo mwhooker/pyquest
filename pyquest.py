@@ -44,14 +44,21 @@ class Spawn(object):
         self.health_rating = 10
         self.armor_rating = 1
         self.damage_taken = 0
-        self.regen_rate = 1 / 30
+        self.regen_rate = 1
         self.level = 1
 
+        self.scheduled_events = {}
+
+        # TODO: is_dead schedule helper
         self.scheduler.repeat(
             self.regenerate,
-            1
+            self.regenerate_delay,
+            until=self.is_dead
         )
-        self.scheduler.repeat(self.tick)
+        self.scheduler.repeat(
+            self.tick,
+            until=self.is_dead
+        )
 
     def is_user(self):
         return False
@@ -68,8 +75,9 @@ class Spawn(object):
     def health_total(self):
         return self.health_rating * self.level
     
-    @property
     def is_dead(self):
+        if self.avatar == "10":
+            logging.info( self.health_remaining)
         return self.health_remaining < 1
 
     def can_hit(self, target):
@@ -81,19 +89,37 @@ class Spawn(object):
         return self.zone.get_field(target_y, target_x)
 
     def attack(self, target=None):
-        #self.delay(self.attack_delay)
 
         if not target:
             target = self.get_facing()
         if not target:
             return
-        self.do_attack(target)
 
-    def do_attack(self, opponent):
-        base_damage = self.attack_rating * self.level
-        mitigation = opponent.armor / 2
-        self.chat.add_message("mit: %s, base: %s" % (mitigation, base_damage))
-        opponent.take_damage(self, max(0, base_damage - mitigation))
+        def do_attack():
+            base_damage = self.attack_rating * self.level
+            mitigation = target.armor / 2
+            self.chat.add_message("mit: %s, base: %s" % (mitigation, base_damage))
+            target.take_damage(self, max(0, base_damage - mitigation))
+
+        self.schedule_action(
+            'attack',
+            lambda : do_attack(),
+            self.attack_delay
+        )
+
+    def die(self):
+        pass
+
+    def schedule_action(self, key, event, ticks):
+        if key in self.scheduled_events:
+            return
+
+        def _inner():
+            event()
+            del self.scheduled_events[key]
+
+        self.scheduled_events[key] = self.scheduler.schedule(_inner, ticks)
+
 
     def take_damage(self, target, dmg):
         self.chat.add_message(
@@ -105,7 +131,11 @@ class Spawn(object):
         self.zone = zone
 
     def move_to(self, y, x):
-        self.zone.move_spawn(self, y, x)
+        self.schedule_action(
+            'move',
+            lambda : self.zone.move_spawn(self, y, x),
+            self.move_delay
+        )
 
     # distance methods. Do these belong here, or in zone?
 
@@ -139,19 +169,21 @@ class Spawn(object):
         regen = min(self.regen_rate, self.health_total - self.health_remaining)
         self.damage_taken -= regen
 
+    @property
     def regenerate_delay(self):
-        return 30
+        return 300
 
     def tick(self):
-        """Must always be called by by subclasses."""
-
-        #self.regenerate()
         pass
 
     @property
     def attack_delay(self):
         """how many ticks between attacks."""
         return 30
+
+    @property
+    def move_delay(self):
+        return 5
 
 
 class Player(Spawn):
@@ -169,8 +201,19 @@ class Player(Spawn):
         self.level += 1
         self.chat.add_message("Ding! level %d" % self.level)
 
+    def take_damage(self, target, dmg):
+        super(Player, self).take_damage(target, dmg)
+        if self.is_dead():
+            self.die()
+
     def add_experience(self, exp):
         self.experience += exp
+        if self.experience >= self.experience_needed:
+            self.do_ding()
+
+    def die(self):
+        super(Player, self).die()
+        sys.exit(0)
 
     @property
     def experience_needed(self):
@@ -178,10 +221,6 @@ class Player(Spawn):
 
     def tick(self):
         super(Player, self).tick()
-        if self.experience >= self.experience_needed:
-            self.do_ding()
-        if self.is_dead:
-            sys.exit(0)
 
     def con(self, spawn):
         """[-1, 1], lower being easier, higher being harder, 0 being even. """
@@ -209,9 +248,18 @@ class Mob(Spawn):
 
     def take_damage(self, target, dmg):
         super(Mob, self).take_damage(target, dmg)
-        if self.is_dead:
+        if self.is_dead():
+            logging.info("mob(%s) dead" % self.avatar)
             target.add_experience(self.exp)
+            self.die()
+            return
         self.hate[target] += dmg
+
+    def die(self):
+        for event in self.scheduled_events.values():
+            self.scheduler.cancel(event)
+
+        self.zone.remove_spawn(self)
 
     def flee(self):
         target = self.nearest_target(self.hate)
@@ -241,6 +289,9 @@ class Mob(Spawn):
     def tick(self):
         super(Mob, self).tick()
 
+        if self.avatar == "10":
+            if self.is_dead():
+                logging.info("tick")
         # attack or flee
         if self.flees and \
            self.health_total * 0.1 >= self.health_remaining:
@@ -269,7 +320,7 @@ class Mob(Spawn):
             if self.hate[spawn] < 1:
                 forget.append(spawn)
 
-            if spawn.is_dead:
+            if spawn.is_dead():
                 forget.append(spawn)
 
         for spawn in forget:
@@ -344,11 +395,6 @@ class Zone(object):
 
     def tick(self):
         for spawn in self.spawns.keys():
-
-            #spawn.tick()
-            if spawn.is_dead:
-                self.remove_spawn(spawn)
-                continue
 
             self.screen.update(spawn.y, spawn.x, spawn)
 
@@ -601,14 +647,21 @@ class GameLoop(object):
         self.target_tps = 60
         self.scheduler = scheduler(time.time, time.sleep)
 
-    def repeat(self, f, n=1):
-        """repeat f every n ticks.  """
+    def repeat(self, f, n=1, until=None):
+        """repeat f every n ticks."""
 
         def _run():
             f()
-            self.repeat(f, n)
+            if not callable(until) or not until():
+                self.repeat(f, n, until)
 
-        self.scheduler.enter(n / self.target_tps, 1, _run, ())
+        self.schedule(_run, n)
+
+    def schedule(self, f, n=1):
+        return self.scheduler.enter(n / self.target_tps, 1, f, ())
+
+    def cancel(self, event):
+        self.scheduler.cancel(event)
 
     def run(self):
         self.scheduler.run()
