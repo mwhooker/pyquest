@@ -12,6 +12,7 @@ import time
 import types
 
 from collections import defaultdict, namedtuple
+from sched import scheduler
 
 
 logging.basicConfig(filename='debug.log',level=logging.DEBUG)
@@ -29,12 +30,14 @@ DIRECTIONS = {
 class Spawn(object):
     """MOB & Users"""
 
-    def __init__(self, y, x, avatar, chat):
+    def __init__(self, y, x, avatar, chat, scheduler):
         logging.debug("spawning %s" % avatar)
         self.y = y
         self.x = x
         self.avatar = avatar
         self.chat = chat
+        self.scheduler = scheduler
+
         self.zone = None
         self.facing = DIRECTIONS['right']
         self.attack_rating = 2
@@ -43,6 +46,12 @@ class Spawn(object):
         self.damage_taken = 0
         self.regen_rate = 1 / 30
         self.level = 1
+
+        self.scheduler.repeat(
+            self.regenerate,
+            1
+        )
+        self.scheduler.repeat(self.tick)
 
     def is_user(self):
         return False
@@ -72,6 +81,8 @@ class Spawn(object):
         return self.zone.get_field(target_y, target_x)
 
     def attack(self, target=None):
+        self.delay(self.attack_delay)
+
         if not target:
             target = self.get_facing()
         if not target:
@@ -128,9 +139,19 @@ class Spawn(object):
         regen = min(self.regen_rate, self.health_total - self.health_remaining)
         self.damage_taken -= regen
 
+    def regenerate_delay(self):
+        return 30
+
     def tick(self):
         """Must always be called by by subclasses."""
-        self.regenerate()
+
+        #self.regenerate()
+        pass
+
+    @property
+    def attack_delay(self):
+        """how many ticks between attacks."""
+        return 30
 
 
 class Player(Spawn):
@@ -217,7 +238,6 @@ class Mob(Spawn):
                 new_y = self.y + (-1 if delta_y > 0 else 1)
                 self.move_to(new_y, self.x)
 
-
     def tick(self):
         super(Mob, self).tick()
 
@@ -254,8 +274,6 @@ class Mob(Spawn):
 
         for spawn in forget:
             del self.hate[spawn]
-
-
 
 
 class Zone(object):
@@ -327,7 +345,7 @@ class Zone(object):
     def tick(self):
         for spawn in self.spawns.keys():
 
-            spawn.tick()
+            #spawn.tick()
             if spawn.is_dead:
                 self.remove_spawn(spawn)
                 continue
@@ -523,7 +541,9 @@ def main(window):
     stat_win = window.subwin(20, 80, 20, 101)
     stat_panel = curses.panel.new_panel(stat_win)
 
-    user = Player(1, 1, '@', chatbox)
+    target_fps = 1 / 60
+    mainloop = GameLoop(target_fps)
+    user = Player(1, 1, '@', chatbox, mainloop)
     user.level = 2
 
     screen = Screen(display_win, user)
@@ -533,7 +553,7 @@ def main(window):
     statbox = StatBox(stat_panel, 20, 80, user)
 
     for i in xrange(1, 11):
-        mob = Mob(i+1, 10, avatar=str(i), chat=chatbox)
+        mob = Mob(i+1, 10, avatar=str(i), chat=chatbox, scheduler=mainloop)
         mob.level = 1
         zone.add_spawn(mob)
 
@@ -542,6 +562,7 @@ def main(window):
     fps = Counter()
 
     def loop():
+        logging.info("loop")
         ch = window.getch()
         curses.flushinp()
         if ch > 0:
@@ -551,15 +572,15 @@ def main(window):
         fps.inc()
         display_win.refresh()
 
-    target_fps = 1 / 60
-
-    schedule = Scheduler()
-    schedule.repeat(loop, target_fps)
-    schedule.repeat(
+    mainloop.repeat(loop)
+    mainloop.repeat(
         lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
         1
     )
 
+    mainloop.run()
+
+    """
 
     while True:
         schedule.notify()
@@ -568,7 +589,7 @@ def main(window):
             time.sleep(next_event)
         else:
             logging.info("can't keep up. %s behind" % next_event)
-
+    """
 
 class Counter(object):
 
@@ -583,6 +604,35 @@ class Counter(object):
         self.count = 0
         return tmp
 
+
+class GameLoop(object):
+
+    def __init__(self, tps):
+
+        self.tps = tps
+        self.scheduler = scheduler(time.time, self._delay)
+
+    def _delay(self, x=None):
+        logging.info(x)
+        time.sleep(x)
+
+    def repeat(self, f, n=1):
+        """repeat f every n ticks.  """
+
+        def _run():
+            f()
+            self.repeat(_run, n)
+
+        self.scheduler.enter(n / 60, 0, _run, ())
+
+    def run(self):
+        while True:
+            self.scheduler.run()
+            self._delay()
+
+
+
+"""
 class Tick(object):
 
     def __init__(self):
@@ -625,6 +675,7 @@ class Scheduler(object):
 
             task.action()
         self.schedule.difference_update(set(to_exec))
+"""
 
 
 
