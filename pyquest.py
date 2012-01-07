@@ -81,7 +81,7 @@ class Spawn(object):
         return self.zone.get_field(target_y, target_x)
 
     def attack(self, target=None):
-        self.delay(self.attack_delay)
+        #self.delay(self.attack_delay)
 
         if not target:
             target = self.get_facing()
@@ -562,7 +562,6 @@ def main(window):
     fps = Counter()
 
     def loop():
-        logging.info("loop")
         ch = window.getch()
         curses.flushinp()
         if ch > 0:
@@ -575,21 +574,11 @@ def main(window):
     mainloop.repeat(loop)
     mainloop.repeat(
         lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
-        1
+        1 / target_fps
     )
 
     mainloop.run()
 
-    """
-
-    while True:
-        schedule.notify()
-        next_event = schedule.next_event() - time.time()
-        if next_event >= 0:
-            time.sleep(next_event)
-        else:
-            logging.info("can't keep up. %s behind" % next_event)
-    """
 
 class Counter(object):
 
@@ -607,75 +596,22 @@ class Counter(object):
 
 class GameLoop(object):
 
-    def __init__(self, tps):
+    def __init__(self, target_tps):
 
-        self.tps = tps
-        self.scheduler = scheduler(time.time, self._delay)
-
-    def _delay(self, x=None):
-        logging.info(x)
-        time.sleep(x)
+        self.target_tps = 60
+        self.scheduler = scheduler(time.time, time.sleep)
 
     def repeat(self, f, n=1):
         """repeat f every n ticks.  """
 
         def _run():
             f()
-            self.repeat(_run, n)
+            self.repeat(f, n)
 
-        self.scheduler.enter(n / 60, 0, _run, ())
+        self.scheduler.enter(n / self.target_tps, 1, _run, ())
 
     def run(self):
-        while True:
-            self.scheduler.run()
-            self._delay()
-
-
-
-"""
-class Tick(object):
-
-    def __init__(self):
-        self.observers = []
-
-    def tick(self):
-        for obj in self.observers:
-            obj.tick()
-
-    def register(self, obj):
-        self.observers.append(obj)
-
-
-class Scheduler(object):
-
-    def __init__(self):
-        self.last_tick = 0
-        self.schedule = set([])
-        self.Task = namedtuple('Task', ['action', 'when', 'repeat'])
-
-    def repeat(self, action, every):
-        self.schedule.add(self.Task(action, time.time() + every, every))
-
-    def schedule(self, action, from_now):
-        self.schedule.add(self.Task(action, time.time() + from_now, False))
-
-    def next_event(self):
-        return min(self.schedule, key=lambda x: x.when).when
-
-    def notify(self):
-        to_exec = [task for task in self.schedule if task.when <= time.time()]
-
-        for task in to_exec:
-            if task.when + 0.1 < time.time():
-                logging.warn(
-                    "task %s later than 100ms" % task.action.__name__)
-
-            if task.repeat:
-                self.repeat(task.action, task.repeat)
-
-            task.action()
-        self.schedule.difference_update(set(to_exec))
-"""
+        self.scheduler.run()
 
 
 
