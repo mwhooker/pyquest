@@ -1,0 +1,27 @@
+NEXT:
+
+TODO:
+
+  FUN:
+    AI improvement
+      wander
+      tethering
+      path finding
+      respawn
+
+  BIG:
+    multiplayer
+    terrain
+    ui
+    inventory
+    spells
+    items
+    skills
+    ray casting (so can't see through walls.)
+
+  TINY:
+    auto attack
+    add randomness to stat exchange
+
+BUGS:
+    can overrun boundaries. Needs scrolling/pads
