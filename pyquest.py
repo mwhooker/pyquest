@@ -273,16 +273,15 @@ class Mob(Spawn):
         if self.can_hit(target):
             self.attack(target)
         else:
-            self.zone.route(self.y, self.x, target.y, target.x)
-            return
-            delta_y = self.y - target.y
-            delta_x = self.x - target.x
-            if abs(delta_x) > abs(delta_y):
-                new_x = self.x + (-1 if delta_x > 0 else 1)
-                self.move_to(self.y, new_x)
-            else:
-                new_y = self.y + (-1 if delta_y > 0 else 1)
-                self.move_to(new_y, self.x)
+            route = self.zone.route(self.y, self.x, target.y, target.x)
+            if not route:
+                logging.info("no route to target")
+                return
+            assert len(route) > 1
+            logging.info(route)
+            next_cell = route[1]
+            logging.info("moving to (%s, %s)" % (next_cell[0], next_cell[1]))
+            self.move_to(next_cell[0], next_cell[1])
 
     def tick(self):
         super(Mob, self).tick()
@@ -409,7 +408,6 @@ class Zone(object):
 
 
     def route(self, y1, x1, y2, x2):
-        logging.info('routing(%s, %s, %s, %s)' % (y1, x1, y2, x2))
         dist = {}
         previous = {}
         q = set()
@@ -424,22 +422,16 @@ class Zone(object):
         while len(q):
             node, u = min([item for item in dist.items() if item[0] in q],
                           key=lambda x: x[1])
-            logging.info("%s is %s distance" % (node, u))
-            #self.set_field(node[0], node[1], 'x')
             if u == 'inf':
                 break
             if node == (y2, x2):
-                logging.info("previous: %s" % previous)
                 s = []
                 u = (y2, x2)
                 while u in previous:
                     s.insert(0, u)
+                    #self.set_field(u[0], u[1], 'x')
                     u = previous[u]
-                logging.info("Shortest path? %s" % s)
-                    
-
-                logging.info("FOUND HIM!")
-                return
+                return s
             q.remove(node)
             neighbors = set(self.neighbor_iter(*node)).intersection(q)
             for v in neighbors:
@@ -447,10 +439,6 @@ class Zone(object):
                 if alt < dist[v]:
                     dist[v] = alt
                     previous[v] = node
-
-        logging.info(dist)
-        return dist
-
 
 
     @staticmethod
