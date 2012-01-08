@@ -6,7 +6,6 @@ TODO:
     AI improvement
       wander
       tethering
-      path finding
       respawn
 
   BIG:
@@ -18,6 +17,8 @@ TODO:
     items
     skills
     ray casting (so can't see through walls.)
+    rewrite enemy AI so that it's not ghetto
+        (i.e. one action at a time. in a loop on tick)
 
   TINY:
     auto attack

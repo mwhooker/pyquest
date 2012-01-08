@@ -278,23 +278,24 @@ class Mob(Spawn):
                 logging.info("no route to target")
                 return
             assert len(route) > 1
-            logging.info(route)
             next_cell = route[1]
-            logging.info("moving to (%s, %s)" % (next_cell[0], next_cell[1]))
             self.move_to(next_cell[0], next_cell[1])
 
     def tick(self):
         super(Mob, self).tick()
 
-        # attack or flee
-        if self.flees and \
-           self.health_total * 0.1 >= self.health_remaining:
-            self.flee()
-        elif len(self.hate):
-            self.chase(
-                max(self.hate.items(), key=lambda x: x[1])[0]
-            )
-        elif self.kos:
+        # decide to act if no scheduled actions.
+        if not len(self.scheduled_events):
+            # attack or flee
+            if self.flees and \
+               self.health_total * 0.1 >= self.health_remaining:
+                self.flee()
+            elif len(self.hate):
+                self.chase(
+                    max(self.hate.items(), key=lambda x: x[1])[0]
+                )
+
+        if self.kos:
             targets = self.targets_in_radius(3)
             targets = [t for t in targets if t.is_user()]
             if len(targets):
@@ -395,28 +396,22 @@ class Zone(object):
         if x > 0:
             yield (y, x - 1)
 
-    def free_neighbor_iter(self, y, x):
-        """unoccupied neighbord cells."""
-        if y > 0 and not self.is_occupied(y - 1, x):
-            yield (y - 1, x)
-        if x < self.x and not self.is_occupied(y, x + 1):
-            yield (y, x + 1)
-        if y < self.y and not self.is_occupied(y + 1, x):
-            yield (y + 1, x)
-        if x > 0 and not self.is_occupied(y, x - 1):
-            yield (y, x - 1)
-
 
     def route(self, y1, x1, y2, x2):
+        logging.info("routing")
         dist = {}
         previous = {}
         q = set()
         for node in self.cell_iter():
-            if self.distance(y1, x1, node[0], node[1]) > 5:
+            if self.distance(y1, x1, node[0], node[1]) > 50:
                 continue
+            if self.is_occupied(node[0], node[1]):
+                if node not in ((y1, x1), (y2, x2)):
+                    continue
             dist[node] = 'inf'
             previous[node] = None
             q.add(node)
+            #self.set_field(node[0], node[1]+10, 'x')
 
         dist[(y1, x1)] = 0
         while len(q):
@@ -649,6 +644,8 @@ def main(window):
     screen = Screen(display_win, user)
     zone = Zone(100, 100, screen)
     zone.add_spawn(user)
+    for i in xrange(55):
+        zone.set_field(13, 9+i, 'x')
 
     statbox = StatBox(stat_panel, 20, 80, user)
 
