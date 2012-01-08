@@ -47,6 +47,7 @@ class Spawn(object):
         self.regen_rate = 1
         self.level = 1
 
+        # would be better to replace this with a do_unless wrapper.
         self.scheduled_events = {}
 
         # TODO: is_dead schedule helper
@@ -334,34 +335,29 @@ class Zone(object):
                 row.append(None)
             self.field.append(row)
 
+        # dict of spawns with values as up-to-date coords.
+        # TODO: can make this simple function
         self.spawns = {}
 
-    def add_spawn(self, spawn):
-        """Should immediately render spawn on map."""
-        spawn.set_zone(self)
-        self.set_field(spawn.y, spawn.x, spawn)
+
+    def set_field(self, y, x, obj):
+        self.field[y][x] = obj
+
+        self.screen.update(y, x, obj)
 
     def unset_field(self, y, x):
         cur = self.field[y][x]
         self.field[y][x] = None
-        if cur in self.spawns:
-            del self.spawns[cur]
         self.screen.update(y, x, ' ')
-
-    def is_occupied(self, y, x):
-        return bool(self.field[y][x])
-    
-    def has_spawn(self, y, x):
-        return isinstance(self.field[y][x], Spawn)
-
-    def set_field(self, y, x, spawn):
-        self.field[y][x] = spawn
-        self.spawns[spawn] = (spawn.y, spawn.x)
-
-        self.screen.update(y, x, spawn)
 
     def get_field(self, y, x):
         return self.field[y][x]
+
+    def add_spawn(self, spawn):
+        """Should immediately render spawn on map."""
+        spawn.set_zone(self)
+        self.spawns[spawn] = (spawn.y, spawn.x)
+        self.set_field(spawn.y, spawn.x, spawn)
 
     def move_spawn(self, spawn, y, x):
         if self.is_occupied(y, x):
