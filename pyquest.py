@@ -145,20 +145,10 @@ class Spawn(object):
     def distance(self, target):
         return self.zone.distance(self.y, self.x, target.y, target.x)
 
-    def circle_iter(self, r):
-        """
-        Iterator of coords in circle of r radius around self.
-
-        TODO: not circular.
-        """
-        for y in xrange(self.y - r, self.y + r + 1):
-            for x in xrange(self.x - r, self.x + r + 1):
-                if (y, x) != (self.y, self.x):
-                    yield (y, x)
-
     def targets_in_radius(self, radius):
         # TODO: move to Zone?
-        return [self.zone.get_field(*loc) for loc in self.circle_iter(radius)
+        return [self.zone.get_field(*loc) for loc
+                in self.zone.circle_iter(self.y, self.x, radius)
                 if self.zone.has_spawn(*loc)]
         
     def regenerate(self):
@@ -386,6 +376,17 @@ class Zone(object):
             for x in xrange(self.x):
                 yield (y, x)
 
+    def circle_iter(self, center_y, center_x, r):
+        """
+        Iterator of coords in circle of r radius around self.
+
+        TODO: not circular.
+        """
+        for y in xrange(center_y - r, center_y + r + 1):
+            for x in xrange(center_x - r, center_x + r + 1):
+                if (y, x) != (center_y, center_x):
+                    yield (y, x)
+
     def neighbor_iter(self, y, x):
         if y > 0:
             yield (y - 1, x)
@@ -402,16 +403,20 @@ class Zone(object):
         dist = {}
         previous = {}
         q = set()
-        for node in self.cell_iter():
-            if self.distance(y1, x1, node[0], node[1]) > 50:
-                continue
-            if self.is_occupied(node[0], node[1]):
-                if node not in ((y1, x1), (y2, x2)):
-                    continue
+
+        def add_node(node):
             dist[node] = 'inf'
             previous[node] = None
             q.add(node)
+
+        for node in self.circle_iter(y1, x1, 10):
+            if self.is_occupied(node[0], node[1]):
+                continue
+            add_node(node)
             #self.set_field(node[0], node[1]+10, 'x')
+
+        for node in ((y1, x1), (y2, x2)):
+            add_node(node)
 
         dist[(y1, x1)] = 0
         while len(q):
