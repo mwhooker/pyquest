@@ -273,6 +273,8 @@ class Mob(Spawn):
         if self.can_hit(target):
             self.attack(target)
         else:
+            self.zone.route(self.y, self.x, target.y, target.x)
+            return
             delta_y = self.y - target.y
             delta_x = self.x - target.x
             if abs(delta_x) > abs(delta_y):
@@ -342,7 +344,6 @@ class Zone(object):
 
     def set_field(self, y, x, obj):
         self.field[y][x] = obj
-
         self.screen.update(y, x, obj)
 
     def unset_field(self, y, x):
@@ -369,11 +370,88 @@ class Zone(object):
         self.set_field(y, x, spawn)
 
     def remove_spawn(self, spawn):
+        if spawn in self.spawns:
+            del self.spawns[spawn]
         self.unset_field(spawn.y, spawn.x)
 
+    def is_occupied(self, y, x):
+        return bool(self.field[y][x])
+    
+    def has_spawn(self, y, x):
+        return isinstance(self.field[y][x], Spawn)
+
+
+    def cell_iter(self):
+        for y in xrange(self.y):
+            for x in xrange(self.x):
+                yield (y, x)
+
+    def neighbor_iter(self, y, x):
+        if y > 0:
+            yield (y - 1, x)
+        if x < self.x:
+            yield (y, x + 1)
+        if y < self.y:
+            yield (y + 1, x)
+        if x > 0:
+            yield (y, x - 1)
+
+    def free_neighbor_iter(self, y, x):
+        """unoccupied neighbord cells."""
+        if y > 0 and not self.is_occupied(y - 1, x):
+            yield (y - 1, x)
+        if x < self.x and not self.is_occupied(y, x + 1):
+            yield (y, x + 1)
+        if y < self.y and not self.is_occupied(y + 1, x):
+            yield (y + 1, x)
+        if x > 0 and not self.is_occupied(y, x - 1):
+            yield (y, x - 1)
+
+
     def route(self, y1, x1, y2, x2):
-        # TODO
-        pass
+        logging.info('routing(%s, %s, %s, %s)' % (y1, x1, y2, x2))
+        dist = {}
+        previous = {}
+        q = set()
+        for node in self.cell_iter():
+            if self.distance(y1, x1, node[0], node[1]) > 5:
+                continue
+            dist[node] = 'inf'
+            previous[node] = None
+            q.add(node)
+
+        dist[(y1, x1)] = 0
+        while len(q):
+            node, u = min([item for item in dist.items() if item[0] in q],
+                          key=lambda x: x[1])
+            logging.info("%s is %s distance" % (node, u))
+            #self.set_field(node[0], node[1], 'x')
+            if u == 'inf':
+                break
+            if node == (y2, x2):
+                logging.info("previous: %s" % previous)
+                s = []
+                u = (y2, x2)
+                while u in previous:
+                    s.insert(0, u)
+                    u = previous[u]
+                logging.info("Shortest path? %s" % s)
+                    
+
+                logging.info("FOUND HIM!")
+                return
+            q.remove(node)
+            neighbors = set(self.neighbor_iter(*node)).intersection(q)
+            for v in neighbors:
+                alt = u + self.distance(node[0], node[1], v[0], v[1])
+                if alt < dist[v]:
+                    dist[v] = alt
+                    previous[v] = node
+
+        logging.info(dist)
+        return dist
+
+
 
     @staticmethod
     def distance(y1, x1, y2, x2):
