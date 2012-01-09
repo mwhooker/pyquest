@@ -129,6 +129,11 @@ class Spawn(object):
     def set_zone(self, zone):
         self.zone = zone
 
+    def move_cardinal(self, direction):
+        d = DIRECTIONS[direction]
+        self.facing = d
+        self.move_to(self.y + d[0], self.x + d[1])
+
     def move_to(self, y, x):
         self.schedule_action(
             'move',
@@ -271,6 +276,11 @@ class Mob(Spawn):
             next_cell = route[1]
             self.move_to(next_cell[0], next_cell[1])
 
+    def wander(self):
+        #random.choice(DIRECTIONS)
+
+        pass
+
     def tick(self):
         super(Mob, self).tick()
 
@@ -284,6 +294,8 @@ class Mob(Spawn):
                 self.chase(
                     max(self.hate.items(), key=lambda x: x[1])[0]
                 )
+            else:
+                self.wander()
 
         if self.kos:
             targets = self.targets_in_radius(3)
@@ -521,22 +533,12 @@ class UserControl(object):
             self.spawn.attack()
 
     def move_cardinal(self, key):
-        y, x = old_y, old_x = self.spawn.y, self.spawn.x
-        if key == curses.KEY_DOWN:
-            y += 1
-            self.spawn.facing = DIRECTIONS['down']
-        elif key == curses.KEY_UP:
-            y -= 1
-            self.spawn.facing = DIRECTIONS['up']
-        elif key == curses.KEY_LEFT:
-            x -= 1
-            self.spawn.facing = DIRECTIONS['left']
-        elif key == curses.KEY_RIGHT:
-            x += 1
-            self.spawn.facing = DIRECTIONS['right']
-        else:
-            return
-        self.spawn.move_to(y, x)
+        self.spawn.move_cardinal({
+            curses.KEY_DOWN: 'down',
+            curses.KEY_UP: 'up',
+            curses.KEY_LEFT: 'left',
+            curses.KEY_RIGHT: 'right'
+        }[key])
 
 
 class ChatBox(object):
