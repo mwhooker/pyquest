@@ -1,4 +1,7 @@
 NEXT:
+    terrain
+      each server will have randomly generated world/terrain, but it will be constant after
+      set number of zones, connections, and type (wilderness, city, dungeon)
 
 TODO:
 
@@ -16,22 +19,31 @@ TODO:
 
   BIG:
     multiplayer
-    terrain
+        clients will simply pass input and render screen
+        server will handle all logic.
     ui
     inventory
     spells
     items
     skills
+    game mechanics
+        stats, etc.
     ray casting (so can't see through walls.)
     rewrite enemy AI so that it's not ghetto
         (i.e. one action at a time. in a loop on tick)
+    simple factions (guards shouldn't attack players, but other mobs.)
 
-    PERFORMANCE:
-        routing too slow.
+  PERFORMANCE:
+    routing too slow.
 
   TINY:
     auto attack
     add randomness to stat exchange
+    mobs shouldn't attack characters that are too high a level
 
 BUGS:
-    can overrun boundaries. Needs scrolling/pads
+    Needs scrolling/pads
+
+NOTES:
+    each instance of the server will host 1 zone.
+    servers will need to pass characters from one to the other.
