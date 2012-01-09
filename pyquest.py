@@ -77,6 +77,19 @@ class Spawn(object):
     @property
     def health_total(self):
         return self.health_rating * self.level
+
+    @property
+    def regenerate_delay(self):
+        return 300
+
+    @property
+    def attack_delay(self):
+        """how many ticks between attacks."""
+        return 30
+
+    @property
+    def move_delay(self):
+        return 5
     
     def is_dead(self):
         return self.health_remaining < 1
@@ -157,7 +170,7 @@ class Spawn(object):
         return [self.zone.get_field(*loc) for loc
                 in self.zone.circle_iter(self.y, self.x, radius)
                 if self.zone.has_spawn(*loc)]
-        
+
     def regenerate(self):
         if self.health_remaining == self.health_total:
             return
@@ -165,21 +178,8 @@ class Spawn(object):
         regen = min(self.regen_rate, self.health_total - self.health_remaining)
         self.damage_taken -= regen
 
-    @property
-    def regenerate_delay(self):
-        return 300
-
     def tick(self):
         pass
-
-    @property
-    def attack_delay(self):
-        """how many ticks between attacks."""
-        return 30
-
-    @property
-    def move_delay(self):
-        return 5
 
 
 class Player(Spawn):
