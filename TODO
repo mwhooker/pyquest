@@ -4,9 +4,15 @@ TODO:
 
   FUN:
     AI improvement
-      wander
-      tethering
-      respawn
+      respawn 
+        zone looks at spawn.respawn on add_spawn.
+        if dead, schedule respawn.
+        scheduler mixin?
+      waypoints
+        list of waypoints.
+        chase next waypoint.
+        (move_to faraway coord function?
+        
 
   BIG:
     multiplayer

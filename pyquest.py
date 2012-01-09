@@ -225,12 +225,15 @@ class Player(Spawn):
 
 class Mob(Spawn):
 
+    MOBILITY = ('wander', 'waypoint', 'stationary')
+
     def __init__(self, y, x, avatar='M', *args, **kwargs):
         super(Mob, self).__init__(y, x, avatar, *args, **kwargs)
 
         self.hate = defaultdict(int)
         self.kos = True
         self.flees = False
+        self.mobility = 'wander'
 
     @property
     def exp(self):
@@ -300,6 +303,10 @@ class Mob(Spawn):
             60
         )
 
+    def waypoint(self):
+        # TODO
+        pass
+
     def tick(self):
         super(Mob, self).tick()
 
@@ -314,7 +321,10 @@ class Mob(Spawn):
                     max(self.hate.items(), key=lambda x: x[1])[0]
                 )
             else:
-                self.wander()
+                if self.mobility == 'wander':
+                    self.wander()
+                elif self.mobility == 'waypoint':
+                    self.waypoint()
 
         if self.kos:
             targets = self.targets_in_radius(3)
@@ -679,7 +689,7 @@ def main(window):
 
     statbox = StatBox(stat_panel, 20, 80, user)
 
-    for i in xrange(1, 11):
+    for i in xrange(1, 2):
         mob = Mob(i+1, 10, avatar=str(i), chat=chatbox, scheduler=mainloop)
         mob.level = 1
         zone.add_spawn(mob)
