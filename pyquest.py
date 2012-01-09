@@ -384,6 +384,10 @@ class Zone(object):
     def move_spawn(self, spawn, y, x):
         if self.is_occupied(y, x):
             return
+        if x < 0 or x >= self.x:
+            return
+        if y < 0 or y >= self.y:
+            return
 
         self.unset_field(spawn.y, spawn.x)
         spawn.y = y
