@@ -32,6 +32,7 @@ class Spawn(object):
 
     def __init__(self, y, x, avatar, chat, scheduler):
         logging.debug("spawning %s" % avatar)
+        self.spawn_point = (y, x)
         self.y = y
         self.x = x
         self.avatar = avatar
@@ -46,6 +47,7 @@ class Spawn(object):
         self.damage_taken = 0
         self.regen_rate = 1
         self.level = 1
+        self.wander_radius = 10
 
         # would be better to replace this with a do_unless wrapper.
         self.scheduled_events = {}
@@ -277,9 +279,26 @@ class Mob(Spawn):
             self.move_to(next_cell[0], next_cell[1])
 
     def wander(self):
-        #random.choice(DIRECTIONS)
+        distance_to_spawn = self.zone.distance(
+            self.y, self.x, self.spawn_point[0], self.spawn_point[1])
 
-        pass
+        directions = DIRECTIONS.keys()
+        if distance_to_spawn >= self.wander_radius:
+            if self.y >= self.spawn_point[0] + self.wander_radius:
+                directions.remove('down')
+            if self.x >= self.spawn_point[1] + self.wander_radius:
+                directions.remove('right')
+            if self.y <= self.spawn_point[0] - self.wander_radius:
+                directions.remove('up')
+            if self.x <= self.spawn_point[1] - self.wander_radius:
+                directions.remove('left')
+
+
+        self.schedule_action(
+            'wander',
+            lambda: self.move_cardinal(random.choice(directions)),
+            60
+        )
 
     def tick(self):
         super(Mob, self).tick()
