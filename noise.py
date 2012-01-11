@@ -106,4 +106,8 @@ if __name__ == '__main__':
     test()
 
 def fill(zone):
-    pass
+    p = Perlin()
+    for y in xrange(40):
+        for x in xrange(80):
+            noise = p.noise(y * ( 1 / 40), x * (1/80))
+            zone.set_field(y, x, (noise))
