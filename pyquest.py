@@ -375,14 +375,6 @@ class Zone(object):
 
 
     def set_field(self, y, x, obj):
-        def getr(v):
-            x = int(95 * abs(v)) + 32
-            return chr(x)
-
-
-        obj = getr(obj)
-        logging.info("%s, %s" % (y, x))
-
         self.field[y][x] = obj
         self.screen.update(y, x, obj)
 
@@ -692,22 +684,18 @@ def main(window):
 
     screen = Screen(display_win, user)
     zone = Zone(100, 100, screen)
-    """
     zone.add_spawn(user)
     for i in xrange(55):
         zone.set_field(13, 9+i, 'x')
-    """
 
     statbox = StatBox(stat_panel, 20, 80, user)
 
-    """
     for i in xrange(1, 11):
         mob = Mob(i+1, 10, avatar=str(i), chat=chatbox, scheduler=mainloop)
         mob.level = 1
         zone.add_spawn(mob)
-    """
 
-    fill(zone)
+    #fill(zone)
 
     control = UserControl(user)
 

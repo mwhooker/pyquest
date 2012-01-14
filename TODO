@@ -2,6 +2,8 @@ NEXT:
     terrain
       each server will have randomly generated world/terrain, but it will be constant after
       set number of zones, connections, and type (wilderness, city, dungeon)
+      line x line review of port.
+      pythonize
 
 TODO:
 
