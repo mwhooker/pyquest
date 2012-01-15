@@ -1,9 +1,6 @@
 NEXT:
-    terrain
-      each server will have randomly generated world/terrain, but it will be constant after
-      set number of zones, connections, and type (wilderness, city, dungeon)
-      line x line review of port. (should output be (-1, 1)?)
-      pythonize
+    Curses Improvements.
+      Needs scrolling/pads
 
 TODO:
 
@@ -13,11 +10,7 @@ TODO:
         zone looks at spawn.respawn on add_spawn.
         if dead, schedule respawn.
         scheduler mixin?
-      waypoints
-        list of waypoints.
-        chase next waypoint.
-        (move_to faraway coord function?
-        
+
 
   BIG:
     multiplayer
@@ -30,6 +23,7 @@ TODO:
     skills
     game mechanics
         stats, etc.
+        add randomness to stat exchange
     ray casting (so can't see through walls.)
     rewrite enemy AI so that it's not ghetto
         (i.e. one action at a time. in a loop on tick)
@@ -37,14 +31,24 @@ TODO:
 
   PERFORMANCE:
     routing too slow.
+    noise function could be multiprocess. low priority.
 
   TINY:
     auto attack
-    add randomness to stat exchange
     mobs shouldn't attack characters that are too high a level
+    waypoints
+      list of waypoints.
+      chase next waypoint.
+      (move_to faraway coord function?
+
+DONE
+  terrain
+    each server will have randomly generated world/terrain, but it will be constant after
+    set number of zones, connections, and type (wilderness, city, dungeon)
+    TODO DONE line x line review of port. (should output be (-1, 1)?)
+    TOOO pythonize
 
 BUGS:
-    Needs scrolling/pads
 
 NOTES:
     each instance of the server will host 1 zone.
