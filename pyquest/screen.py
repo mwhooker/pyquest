@@ -1,3 +1,9 @@
+import curses
+import types
+
+from pyquest.spawn import Spawn
+
+
 class Screen(object):
     """Abstraction to curses."""
 

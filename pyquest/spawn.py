@@ -1,3 +1,19 @@
+from __future__ import division
+import logging
+import random
+import sys
+
+from collections import defaultdict
+
+
+DIRECTIONS = {
+    'up': (-1, 0),
+    'right': (0, 1),
+    'down': (1, 0),
+    'left': (0, -1)
+}
+
+
 class Spawn(object):
     """MOB & Users"""
 

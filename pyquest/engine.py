@@ -1,3 +1,9 @@
+from __future__ import division
+import time
+
+from sched import scheduler
+
+
 class GameLoop(object):
 
     def __init__(self, target_tps):
