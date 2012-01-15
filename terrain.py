@@ -17,7 +17,9 @@ def generate(y, x):
     return rows
 
 
-def generate2(y, x, noise_f):
+def generate2(y, x, noise_f, filters=None):
+    if not filters:
+        filters = []
     incr = 0.02
     yoff = 0.0
     rows = []
@@ -27,14 +29,23 @@ def generate2(y, x, noise_f):
         cols = []
         for x1 in xrange(x):
             xoff += incr
-            cols.append((noise_f(yoff, xoff) * 127) + 127)
+            cell = noise_f(yoff, xoff)
+            for f in filters:
+                assert callable(f)
+                cell = f(cell)
+            #cols.append(cell)
+            #cols.append((cell * 127) + 127)
+            if cell > 0.25:
+                cols.append(255)
+            else:
+                cols.append(0)
         rows.append(cols)
     return rows
 
 
 if __name__ == '__main__':
     from bmp import Bitmap
-    size = 1024
+    size = 500
     
     def rgb(x):
         return (x, x, x)
@@ -44,6 +55,10 @@ if __name__ == '__main__':
     perlin = Perlin()
     p = noise(6)
     p2 = lambda x, y: perlin.noise(x, y)
+    filters = [
+        lambda cell: (cell * 127) + 127,
+        #lambda cell: 255 if cell > 150 else 0
+    ]
     n= generate2(size, size, p)
 
     for y, row in enumerate(n):
