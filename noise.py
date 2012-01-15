@@ -21,8 +21,7 @@ class Perlin(object):
 
             g = []
             for j in xrange(2):
-                g.append(((random.random() % (0x100 + 0x100)) - 0x100) / 0x100)
-                #g.append(((random.randint(0, 0x100 + 0x100 - 1)) - 0x100) / 0x100)
+                g.append(((random.randint(0, 0x100 + 0x100 - 1)) - 0x100) / 0x100)
             g2[i] = self.normalize(g)
 
         for i in xrange(0xff, -1, -1):
@@ -41,7 +40,10 @@ class Perlin(object):
 
     @staticmethod
     def normalize(g):
-        s = math.sqrt(g[0] ** 2 + g[1] ** 2)
+        s = math.sqrt((g[0] * g[0]) + (g[1] * g[1]))
+        if s == 0:
+            print "%s is zero" % g
+            return [0, 0]
 
         return [g[0] / s, g[1] / s]
 
@@ -101,7 +103,19 @@ class Perlin(object):
 def noise(n, a=2, b=2):
     p = Perlin()
     def _noise(x, y):
+        s = 0
+        scale = 1
 
+        """
+        for i in xrange(n):
+            val = p.noise(x, y)
+            s += val / scale
+            scale *= a
+            x *= b
+            y *= b
+        return s
+
+        """
         return sum(
             [p.noise(b ** i * x, b ** i * y) / (a ** i) for i in xrange(n)]
         )
