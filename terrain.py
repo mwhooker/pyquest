@@ -18,7 +18,7 @@ def generate(y, x):
 
 
 def generate2(y, x, noise_f):
-    incr = 0.05
+    incr = 0.02
     yoff = 0.0
     rows = []
     for y1 in xrange(y):
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     f = Bitmap('output.bmp', size, size)
 
     perlin = Perlin()
-    p = noise(7)
+    p = noise(6)
     p2 = lambda x, y: perlin.noise(x, y)
     n= generate2(size, size, p)
 

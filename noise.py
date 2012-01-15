@@ -103,19 +103,6 @@ class Perlin(object):
 def noise(n, a=2, b=2):
     p = Perlin()
     def _noise(x, y):
-        s = 0
-        scale = 1
-
-        """
-        for i in xrange(n):
-            val = p.noise(x, y)
-            s += val / scale
-            scale *= a
-            x *= b
-            y *= b
-        return s
-
-        """
         return sum(
             [p.noise(b ** i * x, b ** i * y) / (a ** i) for i in xrange(n)]
         )
