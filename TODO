@@ -1,6 +1,5 @@
 NEXT:
-    Curses Improvements.
-      Needs scrolling/pads
+    Come up with strategy for client.
 
 TODO:
 
@@ -16,6 +15,9 @@ TODO:
     multiplayer
         clients will simply pass input and render screen
         server will handle all logic.
+    screen
+        Curses Improvements.
+        Needs scrolling/pads
     ui
     inventory
     spells
