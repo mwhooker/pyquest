@@ -21,7 +21,8 @@ class Perlin(object):
 
             g = []
             for j in xrange(2):
-                g.append(((random.randint(0, 0x100 + 0x100 - 1)) - 0x100) / 0x100)
+                g.append(((random.random() % (0x100 + 0x100)) - 0x100) / 0x100)
+                #g.append(((random.randint(0, 0x100 + 0x100 - 1)) - 0x100) / 0x100)
             g2[i] = self.normalize(g)
 
         for i in xrange(0xff, -1, -1):
@@ -95,6 +96,16 @@ class Perlin(object):
         b = self.lerp(sx, u, v)
 
         return self.lerp(sy, a, b)
+
+
+def noise(n, a=2, b=2):
+    def _noise(x, y):
+        p = Perlin()
+
+        return sum(
+            [p.noise(b ** i * x, b ** i * y) / a ** i for i in xrange(n)]
+        )
+    return _noise
 
 
 def test():
