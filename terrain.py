@@ -34,14 +34,14 @@ def generate2(y, x, noise_f):
 
 if __name__ == '__main__':
     from bmp import Bitmap
-    size = 1024
+    size = 512
     
     def rgb(x):
         return (x, x, x)
 
     f = Bitmap('output.bmp', size, size)
 
-    p = noise(4)
+    p = noise(7)
     n= generate2(size, size, p)
 
     for y, row in enumerate(n):

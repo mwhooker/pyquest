@@ -99,12 +99,25 @@ class Perlin(object):
 
 
 def noise(n, a=2, b=2):
+    p = Perlin()
     def _noise(x, y):
-        p = Perlin()
 
         return sum(
-            [p.noise(b ** i * x, b ** i * y) / a ** i for i in xrange(n)]
+            [p.noise(b ** i * x, b ** i * y) / (a ** i) for i in xrange(n)]
         )
+    return _noise
+
+def noise_mp(n, a=2, b=2):
+    """Doesn't work because I need to ship around the pn obj."""
+    from multiprocessing import Pool
+    pn = Perlin()
+    def f(i):
+        pn.noise(b ** i * x, b ** i * y) / a ** i
+
+    def _noise(x, y):
+        p = Pool()
+        print p.map(f, range(n))
+            
     return _noise
 
 
