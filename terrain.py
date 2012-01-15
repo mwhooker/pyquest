@@ -17,18 +17,32 @@ def generate(y, x):
     return rows
 
 
+def generate2(y, x):
+    p = Perlin()
+    incr = 0.001
+    yoff = 0.0
+    rows = []
+    for y1 in xrange(y):
+        yoff += incr
+        xoff = 0.0
+        cols = []
+        for x1 in xrange(x):
+            xoff += incr
+            cols.append((p.noise(yoff, xoff) * 127) + 127)
+        rows.append(cols)
+    return rows
+
+
 if __name__ == '__main__':
     from bmp import Bitmap
     size = 1024
     
-    def rgb(n):
-        print n
-        x = int(255 * abs(n))
+    def rgb(x):
         return (x, x, x)
 
     f = Bitmap('output.bmp', size, size)
 
-    noise = generate(size, size)
+    noise = generate2(size, size)
 
     for y, row in enumerate(noise):
         for x, col in enumerate(row):
