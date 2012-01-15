@@ -11,7 +11,7 @@ import sys
 import time
 import types
 
-from noise import fill
+from terrain import fill
 from collections import defaultdict, namedtuple
 from sched import scheduler
 
@@ -658,68 +658,6 @@ def init_colors():
         curses.init_pair(i, color, -1)
 
 
-
-def main(window):
-    curses.curs_set(0)
-    curses.cbreak()
-    curses.use_default_colors()
-    assert curses.has_colors()
-    window.nodelay(1)
-    window.border(0)
-    display_win = window.subwin(45, 100, 0, 0)
-
-    init_colors()
-
-    chat_win = window.subwin(20, 80, 0, 101)
-    chat_panel = curses.panel.new_panel(chat_win)
-    chatbox = ChatBox(chat_panel, 20, 80)
-
-    stat_win = window.subwin(20, 80, 20, 101)
-    stat_panel = curses.panel.new_panel(stat_win)
-
-    target_fps = 1 / 60
-    mainloop = GameLoop(target_fps)
-    user = Player(1, 1, '@', chatbox, mainloop)
-    user.level = 2
-
-    screen = Screen(display_win, user)
-    zone = Zone(100, 100, screen)
-    zone.add_spawn(user)
-    for i in xrange(55):
-        zone.set_field(13, 9+i, 'x')
-
-    statbox = StatBox(stat_panel, 20, 80, user)
-
-    for i in xrange(1, 11):
-        mob = Mob(i+1, 10, avatar=str(i), chat=chatbox, scheduler=mainloop)
-        mob.level = 1
-        zone.add_spawn(mob)
-
-    #fill(zone)
-
-    control = UserControl(user)
-
-    fps = Counter()
-
-    def loop():
-        ch = window.getch()
-        curses.flushinp()
-        if ch > 0:
-            control.accept(ch)
-        zone.tick()
-        statbox.tick()
-        fps.inc()
-        display_win.refresh()
-
-    mainloop.repeat(loop)
-    mainloop.repeat(
-        lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
-        1 / target_fps
-    )
-
-    mainloop.run()
-
-
 class Counter(object):
 
     def __init__(self):
@@ -759,6 +697,65 @@ class GameLoop(object):
 
     def run(self):
         self.scheduler.run()
+
+
+def main(window):
+    curses.curs_set(0)
+    curses.cbreak()
+    curses.use_default_colors()
+    assert curses.has_colors()
+    window.nodelay(1)
+    window.border(0)
+    display_win = window.subwin(45, 100, 0, 0)
+
+    init_colors()
+
+    chat_win = window.subwin(20, 80, 0, 101)
+    chat_panel = curses.panel.new_panel(chat_win)
+    chatbox = ChatBox(chat_panel, 20, 80)
+
+    stat_win = window.subwin(20, 80, 20, 101)
+    stat_panel = curses.panel.new_panel(stat_win)
+
+    target_fps = 1 / 60
+    mainloop = GameLoop(target_fps)
+    user = Player(1, 1, '@', chatbox, mainloop)
+    user.level = 2
+
+    screen = Screen(display_win, user)
+    zone = Zone(45, 100, screen)
+    zone.add_spawn(user)
+
+    statbox = StatBox(stat_panel, 20, 80, user)
+
+    for i in xrange(1, 11):
+        mob = Mob(i+1, 10, avatar=str(i), chat=chatbox, scheduler=mainloop)
+        mob.level = 1
+        zone.add_spawn(mob)
+
+    fill(zone)
+
+    control = UserControl(user)
+
+    fps = Counter()
+
+    def loop():
+        ch = window.getch()
+        curses.flushinp()
+        if ch > 0:
+            control.accept(ch)
+        zone.tick()
+        statbox.tick()
+        fps.inc()
+        display_win.refresh()
+
+    mainloop.repeat(loop)
+    mainloop.repeat(
+        lambda: logging.info("Main loop operating at %f fps" % fps.flush()),
+        1 / target_fps
+    )
+
+    mainloop.run()
 
 
 

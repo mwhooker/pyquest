@@ -16,13 +16,21 @@ def generate(y, x, noise_f):
         rows.append(cols)
     return rows
 
-def mountains(cell):
-    if cell > 0.25:
-        return 255
-    return 0
 
-def clouds(cell):
-    return (cell * 127) + 127
+FILTERS = {
+    'mountains': lambda cell: 255 if cell > 0.25 else 0,
+    'clouds': lambda cell: (cell * 127) + 127
+}
+
+def fill(zone):
+    noise_f = noise(6)
+    bg = generate(zone.y, zone.x, noise_f)
+
+    for y, row in enumerate(bg):
+        for x, col in enumerate(row):
+            val = FILTERS['mountains'](col)
+            if val > 0.25:
+                zone.set_field(y, x, '=')
 
 
 if __name__ == '__main__':
@@ -42,7 +50,7 @@ if __name__ == '__main__':
 
     for y, row in enumerate(n):
         for x, col in enumerate(row):
-            val = mountains(col)
+            val = FILTERS['mountains'](col)
             f.set_pixel(y, x, rgb(val))
 
     f.flush()
