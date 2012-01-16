@@ -2,6 +2,7 @@ from __future__ import division
 import curses
 import curses.panel
 import logging
+import sys
 
 from pyquest.screen import ChatBox, Screen, StatBox
 from pyquest.engine import GameLoop

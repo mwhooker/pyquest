@@ -1,6 +1,5 @@
 from __future__ import division
 import struct
-import math
 from collections import defaultdict
 
 
