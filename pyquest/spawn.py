@@ -319,7 +319,7 @@ class Mob(Spawn):
             if len(targets):
                 self.hate[self.nearest_target(targets)] = 2
 
-        forget = []
+        forget = set()
         for spawn in self.hate:
             # slowely forget hate
             if self.distance(spawn) > 5:
@@ -327,14 +327,14 @@ class Mob(Spawn):
 
             # remove distant targets on hate list
             if self.distance(spawn) > 20:
-                forget.append(spawn)
+                forget.add(spawn)
 
             # remove spawns with no hate left
             if self.hate[spawn] < 1:
-                forget.append(spawn)
+                forget.add(spawn)
 
             if spawn.is_dead():
-                forget.append(spawn)
+                forget.add(spawn)
 
         for spawn in forget:
             del self.hate[spawn]
